@@ -106,8 +106,126 @@ h1{font-size:20px;font-weight:500;color:#1a1a1a;margin-bottom:1.25rem;}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#fff;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:8px 18px;font-size:13px;color:#1a1a1a;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:200;white-space:nowrap;box-shadow:0 2px 12px rgba(0,0,0,0.1);}
 .toast.show{opacity:1;}
 </style>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  const firebaseConfig = {
+  apiKey: "AIzaSyBYqng6-vn341KhqtyjjdIJKbxN8J__ndQ",
+  authDomain: "support-team-hub.firebaseapp.com",
+  projectId: "support-team-hub",
+  storageBucket: "support-team-hub.firebasestorage.app",
+  messagingSenderId: "698402996312",
+  appId: "1:698402996312:web:7ceec4c0e7fe15ce2cca2d"
+};
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const ADMIN_EMAILS = ["suzuki@support.com"];
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      document.getElementById('firebase-login-screen').style.display = 'none';
+      document.getElementById('firebase-app-content').style.display = 'block';
+      const isAdmin = ADMIN_EMAILS.includes(user.email);
+      window.firebaseUser = { email: user.email, isAdmin };
+      window.dispatchEvent(new Event('firebase-ready'));
+    } else {
+      document.getElementById('firebase-login-screen').style.display = 'flex';
+      document.getElementById('firebase-app-content').style.display = 'none';
+    }
+  });
+
+  window.firebaseLogin = async function() {
+    const email = document.getElementById('fb-email').value.trim();
+    const password = document.getElementById('fb-password').value;
+    const errEl = document.getElementById('fb-error');
+    errEl.textContent = '';
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch(e) {
+      errEl.textContent = 'メアドまたはパスワードが違います';
+    }
+  };
+
+  window.firebaseLogout = async function() {
+    await signOut(auth);
+  };
+
+  window.firebaseChangePassword = async function() {
+    const current = document.getElementById('pw-current').value;
+    const newpw = document.getElementById('pw-new').value;
+    const confirm = document.getElementById('pw-confirm').value;
+    const errEl = document.getElementById('pw-error');
+    errEl.textContent = '';
+    if(newpw !== confirm){ errEl.textContent = '新しいパスワードが一致しません'; return; }
+    if(newpw.length < 6){ errEl.textContent = 'パスワードは6文字以上にしてください'; return; }
+    try {
+      const user = auth.currentUser;
+      const credential = EmailAuthProvider.credential(user.email, current);
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, newpw);
+      document.getElementById('pw-success').textContent = 'パスワードを変更しました！';
+      document.getElementById('pw-current').value = '';
+      document.getElementById('pw-new').value = '';
+      document.getElementById('pw-confirm').value = '';
+    } catch(e) {
+      errEl.textContent = '現在のパスワードが違います';
+    }
+  };
+
+  document.addEventListener('keydown', function(e) {
+    if(e.key === 'Enter' && document.getElementById('firebase-login-screen').style.display !== 'none') {
+      window.firebaseLogin();
+    }
+  });
+</script>
+
 </head>
 <body>
+<div id="firebase-login-screen" style="display:flex;min-height:100vh;align-items:center;justify-content:center;background:#f5f5f0;position:fixed;inset:0;z-index:9999;">
+  <div style="background:#fff;border-radius:16px;border:0.5px solid rgba(0,0,0,0.1);padding:2rem;width:340px;">
+    <div style="font-size:16px;font-weight:500;color:#1a1a1a;margin-bottom:4px;">サポートチーム ツールハブ</div>
+    <div style="font-size:13px;color:#aaa;margin-bottom:1.5rem;">メアドとパスワードでログイン</div>
+    <div style="font-size:11px;color:#aaa;margin-bottom:4px;">メールアドレス</div>
+    <input id="fb-email" type="email" placeholder="example@company.com" style="width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:9px 10px;font-size:13px;font-family:inherit;outline:none;margin-bottom:10px;">
+    <div style="font-size:11px;color:#aaa;margin-bottom:4px;">パスワード</div>
+    <input id="fb-password" type="password" placeholder="パスワード" style="width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:9px 10px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px;">
+    <div id="fb-error" style="font-size:12px;color:#e24b4a;margin-bottom:8px;min-height:16px;"></div>
+    <button onclick="firebaseLogin()" style="width:100%;background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;cursor:pointer;font-family:inherit;">ログイン</button>
+    <div style="margin-top:1rem;padding-top:1rem;border-top:0.5px solid rgba(0,0,0,0.07);font-size:11px;color:#bbb;text-align:center;">パスワードを忘れた場合は管理者にお問い合わせください</div>
+  </div>
+</div>
+<div id="firebase-user-bar" style="position:fixed;top:12px;right:16px;z-index:500;display:flex;align-items:center;gap:8px;">
+  <span id="firebase-user-email" style="font-size:12px;color:#888;"></span>
+  <button onclick="document.getElementById('pw-modal-bg').style.display='flex'" style="font-size:12px;color:#aaa;background:#fff;border:0.5px solid rgba(0,0,0,0.13);border-radius:7px;padding:4px 10px;cursor:pointer;font-family:inherit;">🔑 PW変更</button>
+  <button onclick="firebaseLogout()" style="font-size:12px;color:#aaa;background:#fff;border:0.5px solid rgba(0,0,0,0.13);border-radius:7px;padding:4px 10px;cursor:pointer;font-family:inherit;">ログアウト</button>
+</div>
+<script>
+window.addEventListener('firebase-ready', function() {
+  const bar = document.getElementById('firebase-user-bar');
+  if(bar && window.firebaseUser) {
+    document.getElementById('firebase-user-email').textContent = window.firebaseUser.email;
+  }
+});
+</script>
+<div id="pw-modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.25);z-index:9998;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:14px;padding:1.5rem;width:320px;margin:1rem;">
+    <div style="font-size:15px;font-weight:500;margin-bottom:1rem;">パスワードを変更</div>
+    <div style="font-size:11px;color:#aaa;margin-bottom:4px;">現在のパスワード</div>
+    <input id="pw-current" type="password" style="width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;margin-bottom:10px;">
+    <div style="font-size:11px;color:#aaa;margin-bottom:4px;">新しいパスワード</div>
+    <input id="pw-new" type="password" style="width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;margin-bottom:10px;">
+    <div style="font-size:11px;color:#aaa;margin-bottom:4px;">新しいパスワード（確認）</div>
+    <input id="pw-confirm" type="password" style="width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px;">
+    <div id="pw-error" style="font-size:12px;color:#e24b4a;min-height:16px;margin-bottom:4px;"></div>
+    <div id="pw-success" style="font-size:12px;color:#3b9e5a;min-height:16px;margin-bottom:8px;"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="document.getElementById('pw-modal-bg').style.display='none'" style="background:transparent;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:13px;color:#888;font-family:inherit;">キャンセル</button>
+      <button onclick="firebaseChangePassword()" style="background:#1a1a1a;border:none;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:13px;color:#fff;font-family:inherit;">変更する</button>
+    </div>
+  </div>
+</div>
+<div id="firebase-app-content" style="display:none;">
 <div class="container">
   <a class="back-btn" href="ホーム.html">◀ ホームに戻る</a>
   <h1>議事録 <span style="font-size:13px;color:#888;font-weight:400;">サポートチーム</span></h1>
@@ -461,5 +579,6 @@ function showToast(msg){
 
 init();
 </script>
+</div>
 </body>
 </html>
