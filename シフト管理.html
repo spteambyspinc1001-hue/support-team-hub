@@ -91,14 +91,14 @@ tr:last-child td{border-bottom:none;}
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider, browserLocalPersistence, setPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider, browserLocalPersistence, setPersistence, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   const firebaseConfig = {
-  apiKey: "AIzaSyBYqng6-vn341KhqtyjjdIJKbxN8J__ndQ",
-  authDomain: "support-team-hub.firebaseapp.com",
-  projectId: "support-team-hub",
-  storageBucket: "support-team-hub.firebasestorage.app",
-  messagingSenderId: "698402996312",
-  appId: "1:698402996312:web:7ceec4c0e7fe15ce2cca2d"
+  apiKey: "AIzaSyAWehsEgF5saQDl6onG0PTeKJNKtA1mTOY",
+  authDomain: "support-team-hub-61ed6.firebaseapp.com",
+  projectId: "support-team-hub-61ed6",
+  storageBucket: "support-team-hub-61ed6.firebasestorage.app",
+  messagingSenderId: "795947969689",
+  appId: "1:795947969689:web:7f2565c04ac93fd501dc08"
 };
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -127,6 +127,56 @@ tr:last-child td{border-bottom:none;}
       await signInWithEmailAndPassword(auth, email, password);
     } catch(e) {
       errEl.textContent = 'メアドまたはパスワードが違います';
+    }
+  };
+
+  window.firebaseSignup = async function() {
+    const email = document.getElementById('fb-signup-email').value.trim();
+    const password = document.getElementById('fb-signup-password').value;
+    const confirm = document.getElementById('fb-signup-confirm').value;
+    const name = document.getElementById('fb-signup-name').value;
+    const errEl = document.getElementById('fb-signup-error');
+    errEl.textContent = '';
+    if(!name){ errEl.textContent = '名前を選択してください'; return; }
+    if(!email){ errEl.textContent = 'メアドを入力してください'; return; }
+    if(password.length < 6){ errEl.textContent = 'パスワードは6文字以上にしてください'; return; }
+    if(password !== confirm){ errEl.textContent = 'パスワードが一致しません'; return; }
+    try {
+      await setPersistence(auth, browserLocalPersistence);
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(result.user, { displayName: name });
+    } catch(e) {
+      if(e.code === 'auth/email-already-in-use'){
+        errEl.textContent = 'このメアドはすでに登録されています';
+      } else {
+        errEl.textContent = '登録に失敗しました: ' + e.message;
+      }
+    }
+  };
+
+  window.toggleAuthMode = function(mode) {
+    const loginForm = document.getElementById('fb-login-form');
+    const signupForm = document.getElementById('fb-signup-form');
+    const loginTab = document.getElementById('fb-tab-login');
+    const signupTab = document.getElementById('fb-tab-signup');
+    if(mode === 'login'){
+      loginForm.style.display = 'block';
+      signupForm.style.display = 'none';
+      loginTab.style.fontWeight = '500';
+      loginTab.style.color = '#1a1a1a';
+      loginTab.style.borderBottom = '2px solid #1a1a1a';
+      signupTab.style.fontWeight = '400';
+      signupTab.style.color = '#aaa';
+      signupTab.style.borderBottom = '2px solid transparent';
+    } else {
+      loginForm.style.display = 'none';
+      signupForm.style.display = 'block';
+      signupTab.style.fontWeight = '500';
+      signupTab.style.color = '#1a1a1a';
+      signupTab.style.borderBottom = '2px solid #1a1a1a';
+      loginTab.style.fontWeight = '400';
+      loginTab.style.color = '#aaa';
+      loginTab.style.borderBottom = '2px solid transparent';
     }
   };
 
@@ -166,16 +216,44 @@ tr:last-child td{border-bottom:none;}
 </head>
 <body>
 <div id="firebase-login-screen" style="display:flex;min-height:100vh;align-items:center;justify-content:center;background:#f5f5f0;position:fixed;inset:0;z-index:9999;">
-  <div style="background:#fff;border-radius:16px;border:0.5px solid rgba(0,0,0,0.1);padding:2rem;width:340px;">
+  <div style="background:#fff;border-radius:16px;border:0.5px solid rgba(0,0,0,0.1);padding:2rem;width:360px;">
     <div style="font-size:16px;font-weight:500;color:#1a1a1a;margin-bottom:4px;">サポートチーム ツールハブ</div>
-    <div style="font-size:13px;color:#aaa;margin-bottom:1.5rem;">メアドとパスワードでログイン</div>
-    <div style="font-size:11px;color:#aaa;margin-bottom:4px;">メールアドレス</div>
-    <input id="fb-email" type="email" placeholder="example@company.com" style="width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:9px 10px;font-size:13px;font-family:inherit;outline:none;margin-bottom:10px;">
-    <div style="font-size:11px;color:#aaa;margin-bottom:4px;">パスワード</div>
-    <input id="fb-password" type="password" placeholder="パスワード" style="width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:9px 10px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px;">
-    <div id="fb-error" style="font-size:12px;color:#e24b4a;margin-bottom:8px;min-height:16px;"></div>
-    <button onclick="firebaseLogin()" style="width:100%;background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;cursor:pointer;font-family:inherit;">ログイン</button>
-    <div style="margin-top:1rem;padding-top:1rem;border-top:0.5px solid rgba(0,0,0,0.07);font-size:11px;color:#bbb;text-align:center;">パスワードを忘れた場合は管理者にお問い合わせください</div>
+    <!-- タブ -->
+    <div style="display:flex;gap:0;margin-bottom:1.5rem;border-bottom:1px solid rgba(0,0,0,0.08);">
+      <button id="fb-tab-login" onclick="toggleAuthMode('login')" style="flex:1;background:none;border:none;border-bottom:2px solid #1a1a1a;padding:8px 0;font-size:13px;font-weight:500;color:#1a1a1a;cursor:pointer;font-family:inherit;">ログイン</button>
+      <button id="fb-tab-signup" onclick="toggleAuthMode('signup')" style="flex:1;background:none;border:none;border-bottom:2px solid transparent;padding:8px 0;font-size:13px;font-weight:400;color:#aaa;cursor:pointer;font-family:inherit;">新規登録</button>
+    </div>
+    <!-- ログインフォーム -->
+    <div id="fb-login-form">
+      <div style="font-size:11px;color:#aaa;margin-bottom:4px;">メールアドレス</div>
+      <input id="fb-email" type="email" placeholder="example@company.com" style="width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:9px 10px;font-size:13px;font-family:inherit;outline:none;margin-bottom:10px;">
+      <div style="font-size:11px;color:#aaa;margin-bottom:4px;">パスワード</div>
+      <input id="fb-password" type="password" placeholder="パスワード" style="width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:9px 10px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px;">
+      <div id="fb-error" style="font-size:12px;color:#e24b4a;margin-bottom:8px;min-height:16px;"></div>
+      <button onclick="firebaseLogin()" style="width:100%;background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;cursor:pointer;font-family:inherit;">ログイン</button>
+      <div style="margin-top:1rem;font-size:11px;color:#bbb;text-align:center;">パスワードを忘れた場合は管理者にお問い合わせください</div>
+    </div>
+    <!-- 新規登録フォーム -->
+    <div id="fb-signup-form" style="display:none;">
+      <div style="font-size:11px;color:#aaa;margin-bottom:4px;">名前</div>
+      <select id="fb-signup-name" style="width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:9px 10px;font-size:13px;font-family:inherit;outline:none;margin-bottom:10px;background:#fff;">
+        <option value="">選択してください</option>
+        <option value="植田">植田</option>
+<option value="菅原">菅原</option>
+<option value="吉崎">吉崎</option>
+<option value="本郷">本郷</option>
+<option value="山口">山口</option>
+<option value="鈴木">鈴木</option>
+      </select>
+      <div style="font-size:11px;color:#aaa;margin-bottom:4px;">メールアドレス</div>
+      <input id="fb-signup-email" type="email" placeholder="example@company.com" style="width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:9px 10px;font-size:13px;font-family:inherit;outline:none;margin-bottom:10px;">
+      <div style="font-size:11px;color:#aaa;margin-bottom:4px;">パスワード（6文字以上）</div>
+      <input id="fb-signup-password" type="password" placeholder="パスワード" style="width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:9px 10px;font-size:13px;font-family:inherit;outline:none;margin-bottom:10px;">
+      <div style="font-size:11px;color:#aaa;margin-bottom:4px;">パスワード（確認）</div>
+      <input id="fb-signup-confirm" type="password" placeholder="パスワードを再入力" style="width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:9px 10px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px;">
+      <div id="fb-signup-error" style="font-size:12px;color:#e24b4a;margin-bottom:8px;min-height:16px;"></div>
+      <button onclick="firebaseSignup()" style="width:100%;background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;cursor:pointer;font-family:inherit;">登録する</button>
+    </div>
   </div>
 </div>
 <div id="firebase-user-bar" style="position:fixed;top:12px;right:16px;z-index:500;display:flex;align-items:center;gap:8px;">
