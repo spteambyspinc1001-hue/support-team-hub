@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>タスク — サポートチーム</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh;}
+.container{max-width:1400px;margin:0 auto;padding:1.5rem 2rem;}
+.back-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#888;text-decoration:none;background:#f0f0eb;border:0.5px solid rgba(0,0,0,0.12);border-radius:8px;padding:5px 12px;margin-bottom:1rem;}
+h1{font-size:20px;font-weight:500;color:#1a1a1a;margin-bottom:1.25rem;}
+
+/* ツールバー */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap;}
+.filter-btn{padding:5px 12px;border-radius:20px;border:0.5px solid rgba(0,0,0,0.13);background:#fff;font-size:12px;cursor:pointer;color:#888;font-family:inherit;}
+.filter-btn.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+.member-filter{padding:5px 10px;border-radius:20px;border:0.5px solid rgba(0,0,0,0.13);background:#fff;font-size:12px;cursor:pointer;color:#1a1a1a;font-family:inherit;outline:none;}
+.sep{width:1px;height:20px;background:rgba(0,0,0,0.1);}
+.add-btn-main{margin-left:auto;background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer;font-family:inherit;}
+.add-btn-main:hover{background:#333;}
+.handover-btn{background:#eeedfe;color:#534ab7;border:0.5px solid #7f77dd;border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:inherit;}
+.handover-btn:hover{background:#CECBF6;}
+
+/* カンバンボード */
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start;}
+.column{background:#f0f0eb;border-radius:12px;padding:12px;min-height:500px;}
+.col-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.col-title{font-size:13px;font-weight:500;color:#1a1a1a;}
+.col-count{font-size:11px;color:#aaa;background:#fff;border-radius:10px;padding:2px 8px;}
+.col-add-btn{background:none;border:none;cursor:pointer;color:#bbb;font-size:18px;line-height:1;padding:0;}
+.col-add-btn:hover{color:#888;}
+.cards{display:flex;flex-direction:column;gap:8px;}
+
+/* タスクカード */
+.task-card{background:#fff;border-radius:10px;border:0.5px solid rgba(0,0,0,0.08);padding:12px;cursor:pointer;transition:box-shadow 0.1s;}
+.task-card:hover{box-shadow:0 2px 12px rgba(0,0,0,0.08);}
+.card-title{font-size:13px;font-weight:500;color:#1a1a1a;margin-bottom:8px;line-height:1.4;}
+.card-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
+.card-due{font-size:10px;border-radius:5px;padding:2px 6px;background:#f5f5f0;color:#888;}
+.card-due.overdue{background:#fcebeb;color:#a32d2d;}
+.card-due.today{background:#fef9e0;color:#7a6000;}
+.card-due.soon{background:#eaf3de;color:#3b6d11;}
+.card-pri{font-size:10px;border-radius:5px;padding:2px 6px;}
+.pri-high{background:#fcebeb;color:#a32d2d;}
+.pri-mid{background:#faeeda;color:#854f0b;}
+.pri-low{background:#f5f5f0;color:#888;}
+.card-member{display:flex;align-items:center;gap:3px;font-size:10px;border-radius:5px;padding:2px 6px;}
+.card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:6px;}
+.card-move-btns{display:flex;gap:4px;}
+.move-btn{font-size:10px;border:0.5px solid rgba(0,0,0,0.13);border-radius:5px;padding:2px 7px;cursor:pointer;background:#f8f8f5;color:#555;font-family:inherit;}
+.move-btn:hover{background:#e8e8e3;}
+.card-handover-badge{font-size:10px;background:#eeedfe;color:#534ab7;border-radius:5px;padding:2px 6px;}
+.empty-col{text-align:center;padding:2rem 1rem;font-size:12px;color:#bbb;}
+
+/* タスク詳細・編集モーダル */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.25);z-index:100;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:#fff;border-radius:14px;border:0.5px solid rgba(0,0,0,0.1);padding:1.5rem;width:100%;max-width:520px;margin:1rem;max-height:90vh;overflow-y:auto;}
+.modal-title{font-size:15px;font-weight:500;margin-bottom:1.25rem;color:#1a1a1a;}
+.form-row{margin-bottom:12px;}
+.form-label{font-size:11px;color:#aaa;margin-bottom:4px;}
+.form-input{width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:8px 10px;font-size:13px;color:#1a1a1a;background:#fff;font-family:inherit;outline:none;}
+.form-input:focus{border-color:#378ADD;}
+.form-select{width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:8px 10px;font-size:13px;color:#1a1a1a;background:#fff;font-family:inherit;outline:none;}
+.form-select:focus{border-color:#378ADD;}
+.form-textarea{width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:8px 10px;font-size:13px;color:#1a1a1a;background:#fff;font-family:inherit;outline:none;resize:vertical;min-height:60px;line-height:1.6;}
+.form-textarea:focus{border-color:#378ADD;}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;}
+.handover-section{background:#f8f8f5;border-radius:10px;padding:12px;margin-bottom:12px;}
+.handover-label{font-size:12px;font-weight:500;color:#534ab7;margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+.cal-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;background:#f8f8f5;border:0.5px solid rgba(0,0,0,0.08);margin-bottom:12px;}
+.toggle-label{font-size:12px;color:#1a1a1a;}
+.toggle{position:relative;width:36px;height:20px;flex-shrink:0;display:block;}
+.toggle input{opacity:0;width:0;height:0;position:absolute;}
+.toggle-track{position:absolute;inset:0;background:#e0e0e0;border-radius:10px;cursor:pointer;transition:background 0.2s;}
+.toggle input:checked+.toggle-track{background:#378ADD;}
+.toggle-thumb{position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform 0.2s;pointer-events:none;}
+.toggle input:checked~.toggle-thumb{transform:translateX(16px);}
+.modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:1.25rem;padding-top:12px;border-top:0.5px solid rgba(0,0,0,0.07);}
+.btn-del{background:none;border:none;cursor:pointer;font-size:12px;color:#ccc;font-family:inherit;}
+.btn-del:hover{color:#e24b4a;}
+.modal-right{display:flex;gap:8px;}
+.btn-cancel{background:transparent;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:13px;color:#888;font-family:inherit;}
+.btn-save{background:#1a1a1a;border:none;border-radius:8px;padding:6px 16px;cursor:pointer;font-size:13px;color:#fff;font-family:inherit;}
+.btn-save:hover{background:#333;}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#fff;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:8px 18px;font-size:13px;color:#1a1a1a;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:200;white-space:nowrap;box-shadow:0 2px 12px rgba(0,0,0,0.1);}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="container">
+  <a class="back-btn" href="ホーム.html">◀ ホームに戻る</a>
+  <h1>タスク <span style="font-size:13px;color:#888;font-weight:400;">サポートチーム</span></h1>
+  <div class="toolbar">
+    <button class="filter-btn active" onclick="setFilter('all',this)">すべて</button>
+    <button class="filter-btn" onclick="setFilter('handover',this)">引き継ぎあり</button>
+    <div class="sep"></div>
+    <select class="member-filter" id="member-filter" onchange="render()">
+      <option value="all">全員</option>
+    </select>
+    <button class="add-btn-main" onclick="openModal()">＋ タスクを追加</button>
+  </div>
+  <div class="board" id="board"></div>
+</div>
+
+<!-- タスク追加・編集モーダル -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">タスクを追加</div>
+    <div class="form-row">
+      <div class="form-label">タイトル</div>
+      <input class="form-input" id="f-title" placeholder="タスクのタイトル">
+    </div>
+    <div class="form-row-3">
+      <div>
+        <div class="form-label">期日</div>
+        <input class="form-input" id="f-due" type="date">
+      </div>
+      <div>
+        <div class="form-label">担当者</div>
+        <select class="form-select" id="f-member"></select>
+      </div>
+      <div>
+        <div class="form-label">優先度</div>
+        <select class="form-select" id="f-pri">
+          <option value="high">高</option>
+          <option value="mid" selected>中</option>
+          <option value="low">低</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-label">ステータス</div>
+      <select class="form-select" id="f-status">
+        <option value="todo">未着手</option>
+        <option value="inprogress">進行中</option>
+        <option value="done">完了</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-label">メモ</div>
+      <textarea class="form-textarea" id="f-memo" placeholder="詳細・備考など" rows="2"></textarea>
+    </div>
+    <!-- 引き継ぎセクション -->
+    <div class="handover-section">
+      <div class="handover-label">📋 引き継ぎ情報</div>
+      <div class="form-row">
+        <div class="form-label">引き継ぎメモ</div>
+        <textarea class="form-textarea" id="f-handover" placeholder="引き継ぎ事項・申し送りを入力" rows="3"></textarea>
+      </div>
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-label">引き継ぎ先</div>
+        <select class="form-select" id="f-handover-to">
+          <option value="">なし</option>
+        </select>
+      </div>
+    </div>
+    <div class="cal-toggle-row">
+      <span class="toggle-label">🗓 カレンダーに表示</span>
+      <label class="toggle">
+        <input type="checkbox" id="f-cal" checked>
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-del" id="btn-del" style="visibility:hidden;" onclick="deleteTask()">削除</button>
+      <div class="modal-right">
+        <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+        <button class="btn-save" onclick="saveTask()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY='tasks_v1';
+const MEMBERS=[
+  {name:'植田',dot:'#b0b0b0'},
+  {name:'菅原',dot:'#e91e8c'},
+  {name:'吉崎',dot:'#378ADD'},
+  {name:'本郷',dot:'#f5c518'},
+  {name:'山口',dot:'#ff7f2a'},
+  {name:'鈴木',dot:'#3b9e5a'},
+  {name:'サポートチーム',dot:'#7f77dd'},
+];
+const COLUMNS=[
+  {id:'todo',label:'未着手',color:'#e24b4a'},
+  {id:'inprogress',label:'進行中',color:'#378ADD'},
+  {id:'done',label:'完了',color:'#3b9e5a'},
+];
+
+let state=loadState();
+let filterMode='all';
+let editingId=null;
+
+function loadState(){
+  try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}
+  return{tasks:[]};
+}
+function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+function init(){
+  const sel=document.getElementById('member-filter');
+  MEMBERS.forEach(m=>{const o=document.createElement('option');o.value=m.name;o.textContent=m.name;sel.appendChild(o);});
+  const fsel=document.getElementById('f-member');
+  fsel.innerHTML='';
+  MEMBERS.forEach(m=>{const o=document.createElement('option');o.value=m.name;o.textContent=m.name;fsel.appendChild(o);});
+  const hsel=document.getElementById('f-handover-to');
+  MEMBERS.forEach(m=>{const o=document.createElement('option');o.value=m.name;o.textContent=m.name;hsel.appendChild(o);});
+  // カレンダーからのプリセット
+  const prefill=localStorage.getItem('cal_prefill_due');
+  if(prefill){localStorage.removeItem('cal_prefill_due');openModal();document.getElementById('f-due').value=prefill;}
+  render();
+}
+
+function setFilter(mode,btn){
+  filterMode=mode;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function render(){
+  const memberF=document.getElementById('member-filter').value;
+  const board=document.getElementById('board');
+  board.innerHTML='';
+
+  COLUMNS.forEach(col=>{
+    let tasks=state.tasks.filter(t=>{
+      if(t.status!==col.id)return false;
+      if(memberF!=='all'&&t.member!==memberF)return false;
+      if(filterMode==='handover'&&!t.handover)return false;
+      return true;
+    }).sort((a,b)=>{
+      const po={high:0,mid:1,low:2};
+      return (po[a.priority]||1)-(po[b.priority]||1);
+    });
+
+    const div=document.createElement('div');div.className='column';
+    div.innerHTML=`<div class="col-header">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div style="width:8px;height:8px;border-radius:50%;background:${col.color};"></div>
+        <span class="col-title">${col.label}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span class="col-count">${tasks.length}</span>
+        <button class="col-add-btn" onclick="openModal('${col.id}')">+</button>
+      </div>
+    </div>
+    <div class="cards" id="cards-${col.id}">
+      ${tasks.length===0?`<div class="empty-col">タスクなし</div>`:tasks.map(t=>buildCard(t)).join('')}
+    </div>`;
+    board.appendChild(div);
+  });
+}
+
+function buildCard(t){
+  const mb=MEMBERS.find(m=>m.name===t.member)||{dot:'#ccc'};
+  const dueChip=buildDueChip(t.due);
+  const priCls={high:'pri-high',mid:'pri-mid',low:'pri-low'}[t.priority]||'pri-mid';
+  const priLbl={high:'高',mid:'中',low:'低'}[t.priority]||'中';
+  const colIdx=COLUMNS.findIndex(c=>c.id===t.status);
+  const prevCol=colIdx>0?COLUMNS[colIdx-1]:null;
+  const nextCol=colIdx<COLUMNS.length-1?COLUMNS[colIdx+1]:null;
+
+  return `<div class="task-card" onclick="openModal('${t.status}','${t.id}')">
+    <div class="card-title">${esc(t.title)}</div>
+    <div class="card-meta">
+      ${dueChip}
+      <span class="card-pri ${priCls}">${priLbl}</span>
+      <span class="card-member" style="background:${mb.dot}22;color:${mb.dot};">
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${mb.dot};"></span>
+        ${t.member||''}
+      </span>
+    </div>
+    ${t.handover?`<div class="card-handover-badge">📋 引き継ぎあり</div>`:''}
+    <div class="card-footer">
+      <div class="card-move-btns">
+        ${prevCol?`<button class="move-btn" onclick="event.stopPropagation();moveTask('${t.id}','${prevCol.id}')">◀ ${prevCol.label}</button>`:''}
+        ${nextCol?`<button class="move-btn" onclick="event.stopPropagation();moveTask('${t.id}','${nextCol.id}')">${nextCol.label} ▶</button>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildDueChip(due){
+  if(!due)return'';
+  const today=new Date();today.setHours(0,0,0,0);
+  const d=new Date(due);
+  const diff=Math.round((d-today)/(1000*60*60*24));
+  let cls='card-due',label=due.replace(/-/g,'/');
+  if(diff<0){cls='card-due overdue';label+=' 期限切れ';}
+  else if(diff===0){cls='card-due today';label='今日';}
+  else if(diff<=3){cls='card-due soon';label+=` (あと${diff}日)`;}
+  return `<span class="${cls}">${label}</span>`;
+}
+
+function moveTask(id,newStatus){
+  const t=state.tasks.find(t=>t.id===id);if(!t)return;
+  t.status=newStatus;
+  saveState();render();
+  showToast(`「${COLUMNS.find(c=>c.id===newStatus)?.label}」に移動しました`);
+}
+
+function openModal(statusOrId,taskId){
+  editingId=null;
+  let defaultStatus='todo';
+  // openModal('todo') or openModal('todo', 'abc123')
+  if(taskId){
+    // 編集モード
+    editingId=taskId;
+  }else if(statusOrId&&COLUMNS.find(c=>c.id===statusOrId)){
+    defaultStatus=statusOrId;
+  }else if(statusOrId&&!COLUMNS.find(c=>c.id===statusOrId)){
+    // IDとして扱う
+    editingId=statusOrId;
+  }
+
+  document.getElementById('modal-title').textContent=editingId?'タスクを編集':'タスクを追加';
+  document.getElementById('btn-del').style.visibility=editingId?'visible':'hidden';
+
+  if(editingId){
+    const t=state.tasks.find(t=>t.id===editingId);if(!t)return;
+    document.getElementById('f-title').value=t.title||'';
+    document.getElementById('f-due').value=t.due||'';
+    document.getElementById('f-member').value=t.member||MEMBERS[0].name;
+    document.getElementById('f-pri').value=t.priority||'mid';
+    document.getElementById('f-status').value=t.status||'todo';
+    document.getElementById('f-memo').value=t.memo||'';
+    document.getElementById('f-handover').value=t.handover||'';
+    document.getElementById('f-handover-to').value=t.handoverTo||'';
+    document.getElementById('f-cal').checked=t.showInCal!==false;
+  }else{
+    document.getElementById('f-title').value='';
+    document.getElementById('f-due').value='';
+    document.getElementById('f-member').value=MEMBERS[0].name;
+    document.getElementById('f-pri').value='mid';
+    document.getElementById('f-status').value=defaultStatus;
+    document.getElementById('f-memo').value='';
+    document.getElementById('f-handover').value='';
+    document.getElementById('f-handover-to').value='';
+    document.getElementById('f-cal').checked=true;
+  }
+  document.getElementById('modal-bg').classList.add('open');
+  setTimeout(()=>document.getElementById('f-title').focus(),50);
+}
+function closeModal(){document.getElementById('modal-bg').classList.remove('open');editingId=null;}
+
+function saveTask(){
+  const title=document.getElementById('f-title').value.trim();
+  if(!title){showToast('タイトルを入力してください');return;}
+  const data={
+    title,
+    due:document.getElementById('f-due').value,
+    member:document.getElementById('f-member').value,
+    priority:document.getElementById('f-pri').value,
+    status:document.getElementById('f-status').value,
+    memo:document.getElementById('f-memo').value.trim(),
+    handover:document.getElementById('f-handover').value.trim(),
+    handoverTo:document.getElementById('f-handover-to').value,
+    showInCal:document.getElementById('f-cal').checked,
+  };
+  if(editingId){
+    const t=state.tasks.find(t=>t.id===editingId);if(!t)return;
+    Object.assign(t,data);
+  }else{
+    state.tasks.push({id:uid(),...data,createdAt:new Date().toISOString()});
+  }
+  saveState();closeModal();render();
+  showToast(editingId?'タスクを更新しました':'タスクを追加しました');
+}
+function deleteTask(){
+  if(!editingId)return;
+  if(!confirm('このタスクを削除しますか？'))return;
+  state.tasks=state.tasks.filter(t=>t.id!==editingId);
+  saveState();closeModal();render();
+  showToast('タスクを削除しました');
+}
+
+document.getElementById('modal-bg').addEventListener('click',function(e){if(e.target===this)closeModal();});
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+init();
+</script>
+</body>
+</html>

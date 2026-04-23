@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>マニュアル — サポートチーム</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh;}
+.container{max-width:1400px;margin:0 auto;padding:1.5rem 2rem;}
+.back-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#888;text-decoration:none;background:#f0f0eb;border:0.5px solid rgba(0,0,0,0.12);border-radius:8px;padding:5px 12px;margin-bottom:1rem;}
+h1{font-size:20px;font-weight:500;color:#1a1a1a;margin-bottom:1.25rem;}
+.layout{display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start;}
+
+/* サイドバー */
+.sidebar{background:#fff;border-radius:14px;border:0.5px solid rgba(0,0,0,0.1);overflow:hidden;position:sticky;top:1rem;}
+.sidebar-header{padding:12px 14px;border-bottom:0.5px solid rgba(0,0,0,0.07);}
+.sidebar-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.sidebar-title{font-size:13px;font-weight:500;}
+.add-cat-btn{background:#1a1a1a;color:#fff;border:none;border-radius:7px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit;}
+.add-cat-btn:hover{background:#333;}
+.search-wrap{position:relative;margin-bottom:8px;}
+.search-input{width:100%;border:0.5px solid rgba(0,0,0,0.13);border-radius:8px;padding:6px 28px 6px 28px;font-size:12px;color:#1a1a1a;background:#f8f8f5;font-family:inherit;outline:none;}
+.search-input:focus{border-color:#378ADD;background:#fff;}
+.search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;color:#aaa;pointer-events:none;}
+.search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;padding:0;line-height:1;display:none;}
+/* タグフィルター */
+.tag-filter-wrap{display:flex;gap:4px;flex-wrap:wrap;}
+.tag-chip{padding:2px 8px;border-radius:12px;border:0.5px solid rgba(0,0,0,0.13);background:#f8f8f5;font-size:11px;cursor:pointer;color:#888;font-family:inherit;}
+.tag-chip.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+.cat-list{max-height:calc(100vh - 260px);overflow-y:auto;}
+
+/* ピン止めセクション */
+.pin-section{border-bottom:0.5px solid rgba(0,0,0,0.06);}
+.pin-section-label{display:flex;align-items:center;gap:5px;padding:8px 14px 4px;font-size:10px;color:#aaa;letter-spacing:0.05em;}
+.pin-item{display:flex;align-items:center;gap:6px;padding:6px 14px;cursor:pointer;border-bottom:0.5px solid rgba(0,0,0,0.03);}
+.pin-item:hover{background:#f8f8f5;}
+.pin-item.active{background:#eef4fb;}
+.pin-item-icon{font-size:11px;flex-shrink:0;}
+.pin-item-title{font-size:12px;color:#555;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pin-item.active .pin-item-title{color:#185fa5;font-weight:500;}
+
+/* カテゴリ・サブカテゴリ */
+.cat-section{}
+.cat-header{display:flex;align-items:center;gap:4px;padding:9px 14px;cursor:pointer;border-bottom:0.5px solid rgba(0,0,0,0.05);}
+.cat-header:hover{background:#f8f8f5;}
+.cat-header.active{background:#f0f0eb;}
+.cat-arrow{font-size:10px;color:#ccc;transition:transform 0.15s;flex-shrink:0;}
+.cat-header.active .cat-arrow{transform:rotate(90deg);}
+.cat-name{font-size:13px;font-weight:500;flex:1;}
+.cat-count{font-size:11px;color:#bbb;margin-right:2px;}
+.cat-edit-btn{background:none;border:none;cursor:pointer;color:#ddd;font-size:13px;padding:0 2px;line-height:1;}
+.cat-edit-btn:hover{color:#888;}
+.sub-section{padding-left:10px;}
+.sub-header{display:flex;align-items:center;gap:4px;padding:7px 14px;cursor:pointer;border-bottom:0.5px solid rgba(0,0,0,0.04);}
+.sub-header:hover{background:#f8f8f5;}
+.sub-header.active{background:#f0f0eb;}
+.sub-arrow{font-size:9px;color:#ccc;transition:transform 0.15s;flex-shrink:0;}
+.sub-header.active .sub-arrow{transform:rotate(90deg);}
+.sub-name{font-size:12px;font-weight:500;color:#555;flex:1;}
+.sub-count{font-size:10px;color:#bbb;margin-right:2px;}
+.manual-items{}
+.manual-item{display:flex;align-items:center;gap:6px;padding:6px 14px 6px 28px;cursor:pointer;border-bottom:0.5px solid rgba(0,0,0,0.03);}
+.manual-item:hover{background:#f8f8f5;}
+.manual-item.active{background:#eef4fb;}
+.manual-item-icon{font-size:11px;flex-shrink:0;}
+.manual-item-title{font-size:12px;color:#555;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.manual-item.active .manual-item-title{color:#185fa5;font-weight:500;}
+.empty-cat{padding:8px 14px 8px 28px;font-size:12px;color:#bbb;}
+
+/* メインエリア */
+.main-area{}
+.no-select{background:#fff;border-radius:14px;border:0.5px solid rgba(0,0,0,0.1);padding:4rem 2rem;text-align:center;color:#bbb;font-size:14px;line-height:2.5;}
+.manual-card{background:#fff;border-radius:14px;border:0.5px solid rgba(0,0,0,0.1);overflow:hidden;}
+.manual-card-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:0.5px solid rgba(0,0,0,0.07);flex-wrap:wrap;gap:8px;}
+.header-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.cat-badge{font-size:11px;color:#888;background:#f0f0eb;border-radius:6px;padding:2px 8px;}
+.type-badge{font-size:11px;border-radius:6px;padding:2px 8px;}
+.type-badge.link{background:#eef4fb;color:#185fa5;}
+.type-badge.text{background:#eaf3de;color:#3b6d11;}
+.pin-btn{background:none;border:0.5px solid rgba(0,0,0,0.13);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;color:#aaa;font-family:inherit;}
+.pin-btn.pinned{background:#fef9e0;border-color:#f5c518;color:#7a6000;}
+.pin-btn:hover{background:#f0f0eb;}
+.header-btns{display:flex;gap:6px;}
+.edit-btn{background:#f0f0eb;border:0.5px solid rgba(0,0,0,0.13);border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer;color:#1a1a1a;font-family:inherit;}
+.edit-btn:hover{background:#e5e5e0;}
+.del-btn{background:none;border:0.5px solid rgba(0,0,0,0.13);border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer;color:#aaa;font-family:inherit;}
+.del-btn:hover{color:#e24b4a;border-color:#e24b4a;}
+
+/* 閲覧モード */
+.view-body{padding:22px 24px;}
+.view-title{font-size:20px;font-weight:500;color:#1a1a1a;margin-bottom:4px;}
+.view-subtitle{font-size:14px;color:#888;margin-bottom:8px;}
+.view-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;}
+.view-tag{font-size:11px;background:#f0f0eb;color:#888;border-radius:12px;padding:2px 9px;}
+.view-meta{font-size:11px;color:#bbb;margin-bottom:16px;}
+.view-desc{font-size:14px;color:#555;line-height:1.8;margin-bottom:20px;white-space:pre-wrap;}
+.drive-links-label{font-size:11px;font-weight:500;color:#aaa;letter-spacing:0.05em;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.drive-links-label::after{content:'';flex:1;height:0.5px;background:rgba(0,0,0,0.07);}
+.drive-links{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+.drive-link-card{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;border:0.5px solid rgba(0,0,0,0.1);background:#f8f8f5;text-decoration:none;transition:background 0.1s;}
+.drive-link-card:hover{background:#f0f0eb;}
+.drive-link-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.drive-link-info{flex:1;min-width:0;}
+.drive-link-name{font-size:13px;font-weight:500;color:#1a1a1a;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.drive-link-url{font-size:11px;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.drive-link-arrow{font-size:13px;color:#bbb;flex-shrink:0;}
+.file-view-card{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;border:0.5px solid rgba(0,0,0,0.1);background:#f8f8f5;cursor:pointer;transition:background 0.1s;}
+.file-view-card:hover{background:#f0f0eb;}
+.steps-label{font-size:11px;font-weight:500;color:#aaa;letter-spacing:0.05em;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.steps-label::after{content:'';flex:1;height:0.5px;background:rgba(0,0,0,0.07);}
+.step-list{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
+.step-row{display:flex;align-items:flex-start;gap:12px;}
+.step-num{width:24px;height:24px;border-radius:50%;background:#1a1a1a;color:#fff;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.step-content{flex:1;}
+.step-text{font-size:14px;color:#1a1a1a;line-height:1.6;}
+.step-note{font-size:12px;color:#888;margin-top:3px;}
+.notes-label{font-size:11px;font-weight:500;color:#aaa;letter-spacing:0.05em;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.notes-label::after{content:'';flex:1;height:0.5px;background:rgba(0,0,0,0.07);}
+.notes-text{font-size:13px;color:#555;line-height:1.8;white-space:pre-wrap;background:#f8f8f5;border-radius:8px;padding:12px 14px;}
+
+/* 編集モード */
+.edit-body{padding:20px 24px;}
+.form-row{margin-bottom:12px;}
+.form-label{font-size:11px;color:#aaa;margin-bottom:4px;}
+.form-input{width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:8px 10px;font-size:13px;color:#1a1a1a;background:#fff;font-family:inherit;outline:none;}
+.form-input:focus{border-color:#378ADD;}
+.form-select{width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:8px 10px;font-size:13px;color:#1a1a1a;background:#fff;font-family:inherit;outline:none;}
+.form-select:focus{border-color:#378ADD;}
+.form-textarea{width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:8px 10px;font-size:13px;color:#1a1a1a;background:#fff;font-family:inherit;outline:none;resize:vertical;line-height:1.7;}
+.form-textarea:focus{border-color:#378ADD;}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.section-divider{font-size:11px;font-weight:500;color:#aaa;letter-spacing:0.05em;margin:16px 0 10px;display:flex;align-items:center;gap:6px;}
+.section-divider::after{content:'';flex:1;height:0.5px;background:rgba(0,0,0,0.07);}
+.link-edit-rows{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;}
+.link-edit-row{display:flex;align-items:center;gap:8px;background:#f8f8f5;border-radius:8px;padding:10px 12px;}
+.link-edit-inputs{flex:1;display:flex;flex-direction:column;gap:5px;}
+.link-type-toggle{display:flex;gap:4px;margin-bottom:4px;}
+.type-tab{font-size:11px;padding:3px 8px;border-radius:5px;border:0.5px solid rgba(0,0,0,0.13);background:#fff;cursor:pointer;color:#888;font-family:inherit;}
+.type-tab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+.link-name-input{border:0.5px solid rgba(0,0,0,0.13);border-radius:7px;padding:5px 9px;font-size:12px;color:#1a1a1a;background:#fff;font-family:inherit;outline:none;width:100%;}
+.link-name-input:focus{border-color:#378ADD;}
+.link-url-input{border:0.5px solid rgba(0,0,0,0.13);border-radius:7px;padding:5px 9px;font-size:12px;color:#378ADD;background:#fff;font-family:inherit;outline:none;width:100%;}
+.link-url-input:focus{border-color:#378ADD;}
+.link-del-btn{background:none;border:none;cursor:pointer;color:#ddd;font-size:15px;padding:0;line-height:1;flex-shrink:0;}
+.link-del-btn:hover{color:#e24b4a;}
+.file-upload-area{border:0.5px dashed rgba(0,0,0,0.2);border-radius:8px;padding:8px 12px;text-align:center;cursor:pointer;background:#f8f8f5;font-size:11px;color:#888;}
+.file-upload-area:hover{background:#f0f0eb;}
+.file-upload-input{display:none;}
+.file-preview{display:flex;align-items:center;gap:8px;background:#f8f8f5;border-radius:8px;padding:6px 10px;}
+.file-preview-icon{font-size:16px;flex-shrink:0;}
+.file-preview-name{font-size:12px;color:#555;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.file-preview-del{background:none;border:none;cursor:pointer;color:#ccc;font-size:13px;padding:0;}
+.file-preview-del:hover{color:#e24b4a;}
+.add-link-btn{display:inline-flex;align-items:center;gap:5px;background:transparent;border:0.5px dashed rgba(0,0,0,0.18);border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;color:#888;font-family:inherit;margin-bottom:14px;}
+.add-link-btn:hover{background:#f5f5f0;}
+.step-edit-rows{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;}
+.step-edit-row{display:flex;align-items:flex-start;gap:8px;}
+.step-edit-num{width:24px;height:24px;border-radius:50%;background:#e0e0e0;color:#888;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:6px;}
+.step-edit-inputs{flex:1;display:flex;flex-direction:column;gap:5px;}
+.step-text-input{border:0.5px solid rgba(0,0,0,0.13);border-radius:7px;padding:6px 9px;font-size:13px;color:#1a1a1a;background:#fff;font-family:inherit;outline:none;width:100%;}
+.step-text-input:focus{border-color:#378ADD;}
+.step-note-input{border:0.5px solid rgba(0,0,0,0.1);border-radius:7px;padding:5px 9px;font-size:12px;color:#888;background:#f8f8f5;font-family:inherit;outline:none;width:100%;}
+.step-note-input:focus{border-color:#378ADD;background:#fff;}
+.step-del-btn{background:none;border:none;cursor:pointer;color:#ddd;font-size:15px;padding:0;line-height:1;flex-shrink:0;margin-top:8px;}
+.step-del-btn:hover{color:#e24b4a;}
+.add-step-btn{display:inline-flex;align-items:center;gap:5px;background:transparent;border:0.5px dashed rgba(0,0,0,0.18);border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;color:#888;font-family:inherit;margin-bottom:14px;}
+.add-step-btn:hover{background:#f5f5f0;}
+.edit-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:12px;border-top:0.5px solid rgba(0,0,0,0.07);}
+.cancel-btn{background:transparent;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:7px 16px;cursor:pointer;font-size:13px;color:#888;font-family:inherit;}
+.save-btn{background:#1a1a1a;border:none;border-radius:8px;padding:7px 18px;cursor:pointer;font-size:13px;color:#fff;font-family:inherit;}
+.save-btn:hover{background:#333;}
+
+/* モーダル */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.25);z-index:100;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:#fff;border-radius:14px;border:0.5px solid rgba(0,0,0,0.1);padding:1.5rem;width:100%;max-width:400px;margin:1rem;}
+.modal-title{font-size:15px;font-weight:500;margin-bottom:1rem;color:#1a1a1a;}
+.modal-input{width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:8px 10px;font-size:13px;color:#1a1a1a;background:#fff;font-family:inherit;outline:none;margin-bottom:10px;}
+.modal-input:focus{border-color:#378ADD;}
+.modal-select{width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:8px 10px;font-size:13px;color:#1a1a1a;background:#fff;font-family:inherit;outline:none;margin-bottom:12px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+.modal-cancel{background:transparent;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:13px;color:#888;font-family:inherit;}
+.modal-ok{background:#1a1a1a;border:none;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:13px;color:#fff;font-family:inherit;}
+.add-manual-modal{background:#fff;border-radius:14px;border:0.5px solid rgba(0,0,0,0.1);padding:1.5rem;width:100%;max-width:440px;margin:1rem;}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#fff;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:8px 18px;font-size:13px;color:#1a1a1a;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:200;white-space:nowrap;box-shadow:0 2px 12px rgba(0,0,0,0.1);}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="container">
+  <a class="back-btn" href="ホーム.html">◀ ホームに戻る</a>
+  <h1>マニュアル <span style="font-size:13px;color:#888;font-weight:400;">サポートチーム</span></h1>
+  <div class="layout">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-top">
+          <span class="sidebar-title">マニュアル</span>
+          <button class="add-cat-btn" onclick="openAddCat()">＋ カテゴリ</button>
+        </div>
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input class="search-input" id="search-input" placeholder="タイトル・タグで検索..." oninput="onSearch(this.value)">
+          <button class="search-clear" id="search-clear" onclick="clearSearch()">×</button>
+        </div>
+        <div class="tag-filter-wrap" id="tag-filter-wrap"></div>
+      </div>
+      <div class="cat-list" id="cat-list"></div>
+    </div>
+    <div class="main-area" id="main-area">
+      <div class="no-select">カテゴリを追加して<br>マニュアルを登録してください<br><br>
+        <span style="font-size:12px;color:#bbb;">よく使うマニュアルはピン止めでトップに固定できます</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- カテゴリモーダル -->
+<div class="modal-bg" id="cat-modal">
+  <div class="modal">
+    <div class="modal-title" id="cat-modal-title">カテゴリを追加</div>
+    <input class="modal-input" id="cat-name-input" placeholder="カテゴリ名" onkeydown="if(event.key==='Enter')saveCat()">
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeCatModal()">キャンセル</button>
+      <button class="modal-ok" onclick="saveCat()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- サブカテゴリモーダル -->
+<div class="modal-bg" id="subcat-modal">
+  <div class="modal">
+    <div class="modal-title" id="subcat-modal-title">サブカテゴリを追加</div>
+    <input class="modal-input" id="subcat-name-input" placeholder="サブカテゴリ名" onkeydown="if(event.key==='Enter')saveSubCat()">
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeSubCatModal()">キャンセル</button>
+      <button class="modal-ok" onclick="saveSubCat()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- マニュアル追加モーダル -->
+<div class="modal-bg" id="manual-modal">
+  <div class="add-manual-modal">
+    <div class="modal-title">マニュアルを追加</div>
+    <div class="form-row">
+      <div class="form-label">タイトル</div>
+      <input class="modal-input" id="manual-title-input" placeholder="マニュアルのタイトル" style="margin-bottom:0;">
+    </div>
+    <div class="form-row" style="margin-top:10px;">
+      <div class="form-label">サブタイトル（任意）</div>
+      <input class="modal-input" id="manual-subtitle-input" placeholder="例）v2.0・2024年版など" style="margin-bottom:0;">
+    </div>
+    <div class="form-row" style="margin-top:10px;">
+      <div class="form-label">種類</div>
+      <select class="modal-select" id="manual-type-input">
+        <option value="link">🔗 リンク型（Google DriveなどのURL）</option>
+        <option value="text">📝 テキスト型（手順書を直接作成）</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeManualModal()">キャンセル</button>
+      <button class="modal-ok" onclick="saveNewManual()">追加</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY='manual_v2';
+let state=loadState();
+let currentCatId=null;
+let currentSubCatId=null;
+let currentManualId=null;
+let editingCatId=null;
+let editingSubCatId=null;
+let searchQuery='';
+let activeTag='';
+let openSubCats={};
+
+function loadState(){
+  try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}
+  return{categories:[],subCategories:[],manuals:[],pinnedIds:[]};
+}
+function saveState(){
+  // 後方互換
+  if(!state.subCategories)state.subCategories=[];
+  if(!state.pinnedIds)state.pinnedIds=[];
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}
+}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+function init(){renderSidebar();}
+
+/* 検索 */
+function onSearch(q){
+  searchQuery=q.trim();
+  document.getElementById('search-clear').style.display=searchQuery?'block':'none';
+  renderSidebar();
+}
+function clearSearch(){
+  document.getElementById('search-input').value='';searchQuery='';
+  document.getElementById('search-clear').style.display='none';
+  renderSidebar();
+}
+
+/* 全タグ収集 */
+function getAllTags(){
+  const tags=new Set();
+  state.manuals.forEach(m=>(m.tags||[]).forEach(t=>tags.add(t)));
+  return [...tags];
+}
+function renderTagFilter(){
+  const tags=getAllTags();
+  const wrap=document.getElementById('tag-filter-wrap');
+  if(tags.length===0){wrap.innerHTML='';return;}
+  wrap.innerHTML=tags.map(t=>`
+    <button class="tag-chip${activeTag===t?' active':''}" onclick="setTagFilter('${t}')">${t}</button>`).join('');
+}
+function setTagFilter(tag){
+  activeTag=activeTag===tag?'':tag;
+  renderTagFilter();renderSidebar();
+}
+
+function matchesFilter(m){
+  const q=searchQuery.toLowerCase();
+  const tagMatch=!activeTag||(m.tags||[]).includes(activeTag);
+  if(!tagMatch)return false;
+  if(!q)return true;
+  return (m.title||'').toLowerCase().includes(q)||
+    (m.subtitle||'').toLowerCase().includes(q)||
+    (m.desc||'').toLowerCase().includes(q)||
+    (m.tags||[]).some(t=>t.toLowerCase().includes(q));
+}
+
+function renderSidebar(){
+  renderTagFilter();
+  const list=document.getElementById('cat-list');
+  if(state.categories.length===0){
+    list.innerHTML='<div style="padding:1.5rem 1rem;text-align:center;font-size:13px;color:#bbb;">カテゴリがありません</div>';return;
+  }
+
+  // ピン止め
+  const pinned=state.pinnedIds.map(id=>state.manuals.find(m=>m.id===id)).filter(Boolean).filter(matchesFilter);
+  let html='';
+  if(pinned.length>0){
+    html+=`<div class="pin-section">
+      <div class="pin-section-label">📌 ピン止め</div>
+      ${pinned.map(m=>`
+        <div class="pin-item${m.id===currentManualId?' active':''}" onclick="openManual('${m.id}')">
+          <span class="pin-item-icon">${m.type==='link'?'🔗':'📝'}</span>
+          <span class="pin-item-title">${esc(m.title)}</span>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  html+=state.categories.map(cat=>{
+    const isOpen=cat.id===currentCatId||(searchQuery||activeTag);
+    const subCats=(state.subCategories||[]).filter(s=>s.catId===cat.id);
+    const directManuals=state.manuals.filter(m=>m.catId===cat.id&&!m.subCatId).filter(matchesFilter);
+    const totalCount=state.manuals.filter(m=>m.catId===cat.id).filter(matchesFilter).length;
+
+    let subHtml='';
+    if(isOpen){
+      // サブカテゴリ
+      subCats.forEach(sub=>{
+        const subManuals=state.manuals.filter(m=>m.catId===cat.id&&m.subCatId===sub.id).filter(matchesFilter);
+        const subOpen=openSubCats[sub.id]||(searchQuery||activeTag);
+        subHtml+=`<div class="sub-section">
+          <div class="sub-header${subOpen?' active':''}" onclick="toggleSubCat('${sub.id}')">
+            <span class="sub-arrow">▶</span>
+            <span class="sub-name">${esc(sub.name)}</span>
+            <span class="sub-count">${subManuals.length}</span>
+            <button class="cat-edit-btn" onclick="event.stopPropagation();renameSubCat('${sub.id}')">✎</button>
+            <button class="cat-edit-btn" onclick="event.stopPropagation();deleteSubCat('${sub.id}')">×</button>
+          </div>
+          ${subOpen?`<div class="manual-items">
+            ${subManuals.length===0?'<div class="empty-cat">マニュアルがありません</div>':
+              subManuals.map(m=>`
+                <div class="manual-item${m.id===currentManualId?' active':''}" onclick="openManual('${m.id}')">
+                  <span class="manual-item-icon">${m.type==='link'?'🔗':'📝'}</span>
+                  <span class="manual-item-title">${esc(m.title)}</span>
+                </div>`).join('')}
+            ${!searchQuery&&!activeTag?`<div style="padding:4px 14px 6px 28px;">
+              <button style="background:transparent;border:0.5px dashed rgba(0,0,0,0.18);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;color:#888;font-family:inherit;" onclick="openAddManual('${cat.id}','${sub.id}')">＋ 追加</button>
+            </div>`:''}
+          </div>`:''}
+        </div>`;
+      });
+
+      // 直属のマニュアル
+      const directHtml=directManuals.length===0&&!searchQuery&&!activeTag?
+        '<div class="empty-cat">マニュアルがありません</div>':
+        directManuals.map(m=>`
+          <div class="manual-item${m.id===currentManualId?' active':''}" onclick="openManual('${m.id}')">
+            <span class="manual-item-icon">${m.type==='link'?'🔗':'📝'}</span>
+            <span class="manual-item-title">${esc(m.title)}</span>
+          </div>`).join('');
+
+      subHtml+=`<div class="manual-items">${directHtml}</div>`;
+      if(!searchQuery&&!activeTag){
+        subHtml+=`<div style="padding:6px 14px 8px;">
+          <button style="background:transparent;border:0.5px dashed rgba(0,0,0,0.18);border-radius:7px;padding:4px 10px;font-size:11px;cursor:pointer;color:#888;font-family:inherit;margin-right:6px;" onclick="openAddManual('${cat.id}','')">＋ マニュアル追加</button>
+          <button style="background:transparent;border:0.5px dashed rgba(0,0,0,0.15);border-radius:7px;padding:4px 10px;font-size:11px;cursor:pointer;color:#aaa;font-family:inherit;" onclick="openAddSubCat('${cat.id}')">＋ サブカテゴリ</button>
+        </div>`;
+      }
+    }
+
+    return `<div class="cat-section">
+      <div class="cat-header${cat.id===currentCatId?' active':''}" onclick="toggleCat('${cat.id}')">
+        <span class="cat-arrow">▶</span>
+        <span class="cat-name">${esc(cat.name)}</span>
+        <span class="cat-count">${totalCount}</span>
+        <button class="cat-edit-btn" onclick="event.stopPropagation();renameCat('${cat.id}')">✎</button>
+        <button class="cat-edit-btn" onclick="event.stopPropagation();deleteCat('${cat.id}')">×</button>
+      </div>
+      ${isOpen?`<div>${subHtml}</div>`:''}
+    </div>`;
+  }).join('');
+
+  list.innerHTML=html;
+}
+
+function toggleCat(id){currentCatId=currentCatId===id?null:id;renderSidebar();}
+function toggleSubCat(id){openSubCats[id]=!openSubCats[id];renderSidebar();}
+
+/* カテゴリ操作 */
+function openAddCat(){
+  editingCatId=null;
+  document.getElementById('cat-modal-title').textContent='カテゴリを追加';
+  document.getElementById('cat-name-input').value='';
+  document.getElementById('cat-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('cat-name-input').focus(),50);
+}
+function renameCat(id){
+  editingCatId=id;
+  const cat=state.categories.find(c=>c.id===id);
+  document.getElementById('cat-modal-title').textContent='カテゴリ名を変更';
+  document.getElementById('cat-name-input').value=cat?cat.name:'';
+  document.getElementById('cat-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('cat-name-input').focus(),50);
+}
+function closeCatModal(){document.getElementById('cat-modal').classList.remove('open');editingCatId=null;}
+function saveCat(){
+  const name=document.getElementById('cat-name-input').value.trim();if(!name)return;
+  if(editingCatId){const c=state.categories.find(c=>c.id===editingCatId);if(c)c.name=name;}
+  else{state.categories.push({id:uid(),name});}
+  saveState();closeCatModal();renderSidebar();
+}
+function deleteCat(id){
+  if(!confirm('このカテゴリと全てのマニュアルを削除しますか？'))return;
+  state.categories=state.categories.filter(c=>c.id!==id);
+  state.subCategories=(state.subCategories||[]).filter(s=>s.catId!==id);
+  state.manuals=state.manuals.filter(m=>m.catId!==id);
+  if(currentCatId===id)currentCatId=null;
+  if(!state.manuals.find(m=>m.id===currentManualId))currentManualId=null;
+  saveState();renderSidebar();
+  if(!currentManualId)document.getElementById('main-area').innerHTML='<div class="no-select">カテゴリを追加して<br>マニュアルを登録してください</div>';
+}
+
+/* サブカテゴリ操作 */
+let addingSubCatCatId=null;
+function openAddSubCat(catId){
+  addingSubCatCatId=catId;editingSubCatId=null;
+  document.getElementById('subcat-modal-title').textContent='サブカテゴリを追加';
+  document.getElementById('subcat-name-input').value='';
+  document.getElementById('subcat-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('subcat-name-input').focus(),50);
+}
+function renameSubCat(id){
+  editingSubCatId=id;
+  const sub=(state.subCategories||[]).find(s=>s.id===id);
+  document.getElementById('subcat-modal-title').textContent='サブカテゴリ名を変更';
+  document.getElementById('subcat-name-input').value=sub?sub.name:'';
+  document.getElementById('subcat-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('subcat-name-input').focus(),50);
+}
+function closeSubCatModal(){document.getElementById('subcat-modal').classList.remove('open');editingSubCatId=null;addingSubCatCatId=null;}
+function saveSubCat(){
+  const name=document.getElementById('subcat-name-input').value.trim();if(!name)return;
+  if(!state.subCategories)state.subCategories=[];
+  if(editingSubCatId){const s=state.subCategories.find(s=>s.id===editingSubCatId);if(s)s.name=name;}
+  else if(addingSubCatCatId){state.subCategories.push({id:uid(),catId:addingSubCatCatId,name});}
+  saveState();closeSubCatModal();renderSidebar();
+}
+function deleteSubCat(id){
+  if(!confirm('このサブカテゴリを削除しますか？（マニュアルはカテゴリ直下に移動します）'))return;
+  state.manuals.forEach(m=>{if(m.subCatId===id)delete m.subCatId;});
+  state.subCategories=(state.subCategories||[]).filter(s=>s.id!==id);
+  saveState();renderSidebar();
+}
+
+/* マニュアル追加 */
+let addingCatId=null,addingSubId=null;
+function openAddManual(catId,subCatId){
+  addingCatId=catId;addingSubId=subCatId||'';
+  document.getElementById('manual-title-input').value='';
+  document.getElementById('manual-subtitle-input').value='';
+  document.getElementById('manual-type-input').value='link';
+  document.getElementById('manual-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('manual-title-input').focus(),50);
+}
+function closeManualModal(){document.getElementById('manual-modal').classList.remove('open');addingCatId=null;addingSubId=null;}
+function saveNewManual(){
+  const title=document.getElementById('manual-title-input').value.trim();
+  const subtitle=document.getElementById('manual-subtitle-input').value.trim();
+  const type=document.getElementById('manual-type-input').value;
+  if(!title||!addingCatId)return;
+  const m={id:uid(),catId:addingCatId,subCatId:addingSubId||null,title,subtitle,type,desc:'',links:[],steps:[],notes:'',tags:[],pinned:false,updatedAt:new Date().toISOString()};
+  state.manuals.push(m);saveState();closeManualModal();
+  currentCatId=addingCatId;currentManualId=m.id;
+  renderSidebar();startEdit(m.id);
+}
+
+/* マニュアル表示 */
+function openManual(id){
+  currentManualId=id;
+  const m=state.manuals.find(m=>m.id===id);if(!m)return;
+  const cat=state.categories.find(c=>c.id===m.catId);
+  if(cat)currentCatId=cat.id;
+  renderSidebar();renderView(m);
+}
+
+function renderView(m){
+  const cat=state.categories.find(c=>c.id===m.catId);
+  const sub=(state.subCategories||[]).find(s=>s.id===m.subCatId);
+  const updated=m.updatedAt?new Date(m.updatedAt).toLocaleDateString('ja-JP'):'';
+  const isLink=m.type==='link';
+  const isPinned=(state.pinnedIds||[]).includes(m.id);
+  const tagsHtml=(m.tags||[]).length>0?`<div class="view-tags">${m.tags.map(t=>`<span class="view-tag">${esc(t)}</span>`).join('')}</div>`:'';
+
+  const linksHtml=isLink&&m.links&&m.links.length>0
+    ?`<div class="drive-links-label">リンク・ファイル</div><div class="drive-links">`+
+      m.links.map(l=>{
+        if(l.isFile&&l.fileData){
+          const icon=getFileIcon(l.fileName||'');
+          return `<div class="file-view-card" onclick="openFileById('${l.fileData.slice(0,20)}','${m.id}')">
+            <div class="drive-link-icon">${icon}</div>
+            <div class="drive-link-info">
+              <div class="drive-link-name">${esc(l.name||l.fileName||'ファイル')}</div>
+              <div class="drive-link-url">${esc(l.fileName||'')}</div>
+            </div>
+            <div class="drive-link-arrow">↓ DL</div>
+          </div>`;
+        }
+        const icon=getLinkIcon(l.url);
+        return `<a class="drive-link-card" href="${esc(l.url)}" target="_blank" rel="noopener">
+          <div class="drive-link-icon">${icon}</div>
+          <div class="drive-link-info">
+            <div class="drive-link-name">${esc(l.name||l.url)}</div>
+            <div class="drive-link-url">${esc(l.url)}</div>
+          </div>
+          <div class="drive-link-arrow">↗</div>
+        </a>`;
+      }).join('')+`</div>`
+    :(isLink?'<div style="font-size:13px;color:#bbb;padding:1rem 0;">リンク・ファイルが未登録です</div>':'');
+
+  const stepsHtml=!isLink&&m.steps&&m.steps.length>0
+    ?`<div class="steps-label">手順</div><div class="step-list">`+
+      m.steps.map((s,i)=>`<div class="step-row">
+        <div class="step-num">${i+1}</div>
+        <div class="step-content">
+          <div class="step-text">${esc(s.text)}</div>
+          ${s.note?`<div class="step-note">${esc(s.note)}</div>`:''}
+        </div>
+      </div>`).join('')+`</div>`:'';
+  const notesHtml=m.notes?`<div class="notes-label">備考・注意事項</div><div class="notes-text">${esc(m.notes)}</div>`:'';
+  const breadcrumb=`${cat?esc(cat.name):''}${sub?' › '+esc(sub.name):''}`;
+
+  document.getElementById('main-area').innerHTML=`
+    <div class="manual-card">
+      <div class="manual-card-header">
+        <div class="header-left">
+          <span class="cat-badge">${breadcrumb}</span>
+          <span class="type-badge ${isLink?'link':'text'}">${isLink?'🔗 リンク型':'📝 テキスト型'}</span>
+          <button class="pin-btn${isPinned?' pinned':''}" onclick="togglePin('${m.id}')">
+            ${isPinned?'📌 ピン中':'📌 ピン止め'}
+          </button>
+        </div>
+        <div class="header-btns">
+          <button class="edit-btn" onclick="startEdit('${m.id}')">編集</button>
+          <button class="del-btn" onclick="deleteManual('${m.id}')">削除</button>
+        </div>
+      </div>
+      <div class="view-body">
+        <div class="view-title">${esc(m.title)}</div>
+        ${m.subtitle?`<div class="view-subtitle">${esc(m.subtitle)}</div>`:''}
+        ${tagsHtml}
+        <div class="view-meta">最終更新：${updated}</div>
+        ${m.desc?`<div class="view-desc">${esc(m.desc)}</div>`:''}
+        ${linksHtml}
+        ${stepsHtml}
+        ${notesHtml}
+      </div>
+    </div>`;
+}
+
+/* ピン止め */
+function togglePin(id){
+  if(!state.pinnedIds)state.pinnedIds=[];
+  const idx=state.pinnedIds.indexOf(id);
+  if(idx>=0)state.pinnedIds.splice(idx,1);else state.pinnedIds.push(id);
+  saveState();renderSidebar();
+  const m=state.manuals.find(m=>m.id===id);if(m)renderView(m);
+  showToast(idx>=0?'ピン止めを解除しました':'ピン止めしました！');
+}
+
+/* リンクアイコン */
+function getLinkIcon(url){
+  if(!url)return'🔗';
+  if(url.includes('drive.google'))return'📁';
+  if(url.includes('docs.google'))return'📄';
+  if(url.includes('slides.google'))return'📊';
+  if(url.includes('sheets.google'))return'📋';
+  if(url.includes('notion'))return'📓';
+  if(url.includes('figma'))return'🎨';
+  if(url.includes('genspark'))return'✨';
+  return'🔗';
+}
+function getFileIcon(name){
+  const ext=(name||'').split('.').pop().toLowerCase();
+  if(['jpg','jpeg','png','gif','webp','svg'].includes(ext))return'🖼';
+  if(ext==='pdf')return'📄';
+  if(['pptx','ppt'].includes(ext))return'📊';
+  if(['xlsx','xls'].includes(ext))return'📋';
+  if(['docx','doc'].includes(ext))return'📝';
+  return'📎';
+}
+function openFileById(prefix,manualId){
+  const m=state.manuals.find(m=>m.id===manualId);if(!m)return;
+  const link=m.links.find(l=>l.isFile&&l.fileData&&l.fileData.startsWith(prefix));
+  if(!link||!link.fileData){showToast('ファイルが見つかりません');return;}
+  const a=document.createElement('a');a.href=link.fileData;a.download=link.fileName||link.name||'file';a.click();
+}
+
+/* 編集 */
+function startEdit(id){
+  currentManualId=id;
+  const m=state.manuals.find(m=>m.id===id);if(!m)return;
+  renderEdit(m);
+}
+
+function renderEdit(m){
+  const isLink=m.type==='link';
+  const cat=state.categories.find(c=>c.id===m.catId);
+  const catOptions=state.categories.map(c=>`<option value="${c.id}"${c.id===m.catId?' selected':''}>${esc(c.name)}</option>`).join('');
+  const subCatsForCat=(state.subCategories||[]).filter(s=>s.catId===m.catId);
+  const subOptions=`<option value="">（なし）</option>`+subCatsForCat.map(s=>`<option value="${s.id}"${s.id===m.subCatId?' selected':''}>${esc(s.name)}</option>`).join('');
+
+  const linksHtml=isLink?`
+    <div class="section-divider">リンク・ファイル</div>
+    <div class="link-edit-rows" id="link-edit-rows">
+      ${(m.links||[]).map((l,i)=>buildLinkRow(i,l)).join('')}
+    </div>
+    <button class="add-link-btn" onclick="addLink()">＋ リンクを追加</button>`:'';
+
+  const stepsHtml=!isLink?`
+    <div class="section-divider">手順</div>
+    <div class="step-edit-rows" id="step-edit-rows">
+      ${(m.steps||[]).map((s,i)=>buildStepRow(i,s)).join('')}
+    </div>
+    <button class="add-step-btn" onclick="addStep()">＋ 手順を追加</button>`:'';
+
+  document.getElementById('main-area').innerHTML=`
+    <div class="manual-card">
+      <div class="manual-card-header">
+        <div class="header-left">
+          <span class="cat-badge">${cat?esc(cat.name):''}</span>
+          <span class="type-badge ${isLink?'link':'text'}">${isLink?'🔗 リンク型':'📝 テキスト型'}</span>
+        </div>
+      </div>
+      <div class="edit-body">
+        <div class="form-row-2">
+          <div>
+            <div class="form-label">カテゴリ</div>
+            <select class="form-select" id="e-cat" onchange="updateSubOptions(this.value)">${catOptions}</select>
+          </div>
+          <div>
+            <div class="form-label">サブカテゴリ</div>
+            <select class="form-select" id="e-subcat">${subOptions}</select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-label">タイトル</div>
+          <input class="form-input" id="e-title" value="${esc(m.title)}" placeholder="マニュアルのタイトル">
+        </div>
+        <div class="form-row">
+          <div class="form-label">サブタイトル（任意）</div>
+          <input class="form-input" id="e-subtitle" value="${esc(m.subtitle||'')}" placeholder="例）v2.0・2024年版など">
+        </div>
+        <div class="form-row">
+          <div class="form-label">タグ（カンマ区切りで複数入力）</div>
+          <input class="form-input" id="e-tags" value="${esc((m.tags||[]).join(','))}" placeholder="例）広告審査,コード発行,月次">
+        </div>
+        <div class="form-row">
+          <div class="form-label">説明・概要</div>
+          <textarea class="form-textarea" id="e-desc" rows="2" placeholder="このマニュアルについての説明">${esc(m.desc||'')}</textarea>
+        </div>
+        ${linksHtml}
+        ${stepsHtml}
+        <div class="section-divider">備考・注意事項</div>
+        <div class="form-row">
+          <textarea class="form-textarea" id="e-notes" rows="3" placeholder="注意点や補足情報など">${esc(m.notes||'')}</textarea>
+        </div>
+        <div class="edit-actions">
+          <button class="cancel-btn" onclick="cancelEdit('${m.id}')">キャンセル</button>
+          <button class="save-btn" onclick="saveEdit('${m.id}')">保存</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function updateSubOptions(catId){
+  const subs=(state.subCategories||[]).filter(s=>s.catId===catId);
+  const sel=document.getElementById('e-subcat');
+  sel.innerHTML=`<option value="">（なし）</option>`+subs.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
+}
+
+function buildLinkRow(i,l){
+  const isFile=l.isFile||false;
+  const filePreview=l.fileData?`<div class="file-preview">
+    <div class="file-preview-icon">${getFileIcon(l.fileName||'')}</div>
+    <div class="file-preview-name">${esc(l.fileName||'ファイル')}</div>
+    <button class="file-preview-del" onclick="clearLinkFile(${i})">×</button>
+  </div>`:'';
+
+  return `<div class="link-edit-row" id="link-row-${i}" data-is-file="${isFile?'1':'0'}">
+    <div class="link-edit-inputs">
+      <div class="link-type-toggle">
+        <button class="type-tab${!isFile?' active':''}" onclick="setLinkType(${i},false)">🔗 URL</button>
+        <button class="type-tab${isFile?' active':''}" onclick="setLinkType(${i},true)">📎 ファイル</button>
+      </div>
+      <input class="link-name-input" placeholder="名前" value="${esc(l.name||'')}">
+      ${!isFile
+        ?`<input class="link-url-input" placeholder="URLを貼り付け（Google Drive, Genspark など）" value="${esc(l.url||'')}">` 
+        :`<div>${filePreview}<label class="file-upload-area" style="${l.fileData?'display:none;':''}">
+            📁 クリックしてファイルを選択（5MB以下）
+            <input class="file-upload-input" type="file" accept="image/*,.pdf,.pptx,.xlsx,.docx" onchange="onFileSelect(${i},this)">
+          </label></div>`
+      }
+    </div>
+    <button class="link-del-btn" onclick="deleteLinkRow(${i})">×</button>
+  </div>`;
+}
+
+function setLinkType(i,isFile){
+  const row=document.getElementById(`link-row-${i}`);if(!row)return;
+  const nameInput=row.querySelector('.link-name-input');
+  const name=nameInput?nameInput.value:'';
+  const div=document.createElement('div');
+  div.innerHTML=buildLinkRow(i,{name,url:'',fileData:'',fileName:'',isFile});
+  row.replaceWith(div.firstElementChild);
+}
+function onFileSelect(i,input){
+  const file=input.files[0];if(!file)return;
+  if(file.size>5*1024*1024){showToast('5MB以下のファイルを選択してください');return;}
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const row=document.getElementById(`link-row-${i}`);if(!row)return;
+    row.dataset.fileData=e.target.result;row.dataset.fileName=file.name;
+    const nameInput=row.querySelector('.link-name-input');
+    const name=nameInput?nameInput.value||file.name:'';
+    const div=document.createElement('div');
+    div.innerHTML=buildLinkRow(i,{name,url:'',fileData:e.target.result,fileName:file.name,isFile:true});
+    row.replaceWith(div.firstElementChild);
+  };
+  reader.readAsDataURL(file);
+}
+function clearLinkFile(i){
+  const row=document.getElementById(`link-row-${i}`);if(!row)return;
+  const nameInput=row.querySelector('.link-name-input');
+  const div=document.createElement('div');
+  div.innerHTML=buildLinkRow(i,{name:nameInput?nameInput.value:'',url:'',fileData:'',fileName:'',isFile:true});
+  row.replaceWith(div.firstElementChild);
+}
+function addLink(){
+  const rows=document.getElementById('link-edit-rows');
+  const i=rows.children.length;
+  const div=document.createElement('div');div.innerHTML=buildLinkRow(i,{name:'',url:'',isFile:false});
+  rows.appendChild(div.firstElementChild);
+  rows.lastElementChild.querySelector('.link-url-input')?.focus();
+}
+function deleteLinkRow(i){
+  document.getElementById(`link-row-${i}`)?.remove();
+  const rows=document.getElementById('link-edit-rows');if(!rows)return;
+  [...rows.children].forEach((row,i)=>{
+    row.id=`link-row-${i}`;
+    row.querySelector('.link-del-btn')?.setAttribute('onclick',`deleteLinkRow(${i})`);
+  });
+}
+function buildStepRow(i,s){
+  return `<div class="step-edit-row" id="step-row-${i}">
+    <div class="step-edit-num">${i+1}</div>
+    <div class="step-edit-inputs">
+      <input class="step-text-input" placeholder="手順の内容" value="${esc(s.text||'')}">
+      <input class="step-note-input" placeholder="補足・注意（任意）" value="${esc(s.note||'')}">
+    </div>
+    <button class="step-del-btn" onclick="deleteStepRow(${i})">×</button>
+  </div>`;
+}
+function addStep(){
+  const rows=document.getElementById('step-edit-rows');
+  const i=rows.children.length;
+  const div=document.createElement('div');div.innerHTML=buildStepRow(i,{text:'',note:''});
+  rows.appendChild(div.firstElementChild);
+  rows.lastElementChild.querySelector('.step-text-input')?.focus();
+}
+function deleteStepRow(i){
+  document.getElementById(`step-row-${i}`)?.remove();
+  const rows=document.getElementById('step-edit-rows');if(!rows)return;
+  [...rows.children].forEach((row,i)=>{
+    row.id=`step-row-${i}`;
+    const num=row.querySelector('.step-edit-num');if(num)num.textContent=i+1;
+    row.querySelector('.step-del-btn')?.setAttribute('onclick',`deleteStepRow(${i})`);
+  });
+}
+function collectLinks(){
+  const rows=document.getElementById('link-edit-rows');if(!rows)return[];
+  return [...rows.children].map(row=>{
+    const isFile=row.dataset.isFile==='1';
+    const name=row.querySelector('.link-name-input')?.value.trim()||'';
+    if(isFile){
+      const fileData=row.dataset.fileData||'';
+      const fileName=row.dataset.fileName||'';
+      return{name,url:'',fileData,fileName,isFile:true};
+    }
+    const url=row.querySelector('.link-url-input')?.value.trim()||'';
+    return{name,url,fileData:'',fileName:'',isFile:false};
+  }).filter(l=>l.url||l.fileData);
+}
+function collectSteps(){
+  const rows=document.getElementById('step-edit-rows');if(!rows)return[];
+  return [...rows.children].map(row=>({
+    text:row.querySelector('.step-text-input')?.value.trim()||'',
+    note:row.querySelector('.step-note-input')?.value.trim()||''
+  })).filter(s=>s.text);
+}
+
+function saveEdit(id){
+  const m=state.manuals.find(m=>m.id===id);if(!m)return;
+  const title=document.getElementById('e-title').value.trim();
+  if(!title){showToast('タイトルを入力してください');return;}
+  const tagsRaw=document.getElementById('e-tags').value.trim();
+  m.catId=document.getElementById('e-cat').value;
+  m.subCatId=document.getElementById('e-subcat').value||null;
+  m.title=title;
+  m.subtitle=document.getElementById('e-subtitle').value.trim();
+  m.tags=tagsRaw?tagsRaw.split(',').map(t=>t.trim()).filter(Boolean):[];
+  m.desc=document.getElementById('e-desc').value.trim();
+  m.links=m.type==='link'?collectLinks():[];
+  m.steps=m.type==='text'?collectSteps():[];
+  m.notes=document.getElementById('e-notes').value.trim();
+  m.updatedAt=new Date().toISOString();
+  currentCatId=m.catId;
+  saveState();renderSidebar();renderView(m);
+  showToast('保存しました');
+}
+function cancelEdit(id){
+  const m=state.manuals.find(m=>m.id===id);
+  if(m)renderView(m);
+  else document.getElementById('main-area').innerHTML='<div class="no-select">マニュアルを選択してください</div>';
+}
+function deleteManual(id){
+  if(!confirm('このマニュアルを削除しますか？'))return;
+  state.manuals=state.manuals.filter(m=>m.id!==id);
+  state.pinnedIds=(state.pinnedIds||[]).filter(p=>p!==id);
+  currentManualId=null;saveState();renderSidebar();
+  document.getElementById('main-area').innerHTML='<div class="no-select">カテゴリを追加して<br>マニュアルを登録してください</div>';
+}
+
+document.getElementById('cat-modal').addEventListener('click',function(e){if(e.target===this)closeCatModal();});
+document.getElementById('subcat-modal').addEventListener('click',function(e){if(e.target===this)closeSubCatModal();});
+document.getElementById('manual-modal').addEventListener('click',function(e){if(e.target===this)closeManualModal();});
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+init();
+</script>
+</body>
+</html>

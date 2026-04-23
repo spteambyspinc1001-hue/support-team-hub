@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>議事録 — サポートチーム</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh;}
+.container{max-width:1400px;margin:0 auto;padding:1.5rem 2rem;}
+.back-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#888;text-decoration:none;background:#f0f0eb;border:0.5px solid rgba(0,0,0,0.12);border-radius:8px;padding:5px 12px;margin-bottom:1rem;}
+h1{font-size:20px;font-weight:500;color:#1a1a1a;margin-bottom:1.25rem;}
+
+.layout{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:start;}
+
+/* サイドバー */
+.sidebar{background:#fff;border-radius:14px;border:0.5px solid rgba(0,0,0,0.1);overflow:hidden;position:sticky;top:1rem;}
+.sidebar-header{padding:12px 14px;border-bottom:0.5px solid rgba(0,0,0,0.07);}
+.sidebar-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.sidebar-title{font-size:13px;font-weight:500;color:#1a1a1a;}
+.new-btn{background:#1a1a1a;color:#fff;border:none;border-radius:7px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit;}
+.new-btn:hover{background:#333;}
+.search-wrap{position:relative;}
+.search-input{width:100%;border:0.5px solid rgba(0,0,0,0.13);border-radius:8px;padding:6px 10px 6px 28px;font-size:12px;color:#1a1a1a;background:#f8f8f5;font-family:inherit;outline:none;}
+.search-input:focus{border-color:#378ADD;background:#fff;}
+.search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;color:#aaa;pointer-events:none;}
+.search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;padding:0;line-height:1;}
+.minutes-list{max-height:calc(100vh - 220px);overflow-y:auto;}
+.minutes-item{padding:10px 14px;border-bottom:0.5px solid rgba(0,0,0,0.05);cursor:pointer;}
+.minutes-item:last-child{border-bottom:none;}
+.minutes-item:hover{background:#f8f8f5;}
+.minutes-item.active{background:#f0f0eb;}
+.minutes-item-date{font-size:11px;color:#aaa;margin-bottom:2px;}
+.minutes-item-title{font-size:13px;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.minutes-item-title.untitled{color:#bbb;}
+.minutes-item-snippet{font-size:11px;color:#888;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.search-highlight{background:#fef9e0;border-radius:2px;}
+.empty-list{padding:1.5rem;text-align:center;font-size:13px;color:#bbb;}
+
+/* エディタエリア */
+.editor-area{display:flex;flex-direction:column;gap:12px;}
+.no-select{background:#fff;border-radius:14px;border:0.5px solid rgba(0,0,0,0.1);padding:3rem 2rem;text-align:center;color:#bbb;font-size:14px;line-height:2;}
+
+.editor-card{background:#fff;border-radius:14px;border:0.5px solid rgba(0,0,0,0.1);overflow:hidden;}
+.editor-toolbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:0.5px solid rgba(0,0,0,0.07);flex-wrap:wrap;gap:8px;}
+.toolbar-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.date-input{border:0.5px solid rgba(0,0,0,0.13);border-radius:7px;padding:4px 8px;font-size:12px;color:#1a1a1a;background:#fff;font-family:inherit;outline:none;}
+.date-input:focus{border-color:#378ADD;}
+.attendees-wrap{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+.attendee-chip{display:flex;align-items:center;gap:4px;border-radius:20px;padding:3px 8px 3px 5px;font-size:11px;cursor:pointer;border:1px solid transparent;opacity:0.4;transition:opacity 0.15s;}
+.attendee-chip.on{opacity:1;}
+.attendee-dot{width:7px;height:7px;border-radius:50%;}
+.toolbar-right{display:flex;gap:6px;align-items:center;}
+.ai-btn{background:#eeedfe;color:#534ab7;border:0.5px solid #7f77dd;border-radius:7px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;}
+.ai-btn:hover{background:#CECBF6;}
+.ai-btn:disabled{opacity:0.5;cursor:not-allowed;}
+.export-btn{background:#f0f0eb;border:0.5px solid rgba(0,0,0,0.15);border-radius:7px;padding:4px 10px;font-size:12px;color:#1a1a1a;cursor:pointer;font-family:inherit;}
+.export-btn:hover{background:#e5e5e0;}
+.del-btn{background:none;border:0.5px solid rgba(0,0,0,0.13);border-radius:7px;padding:4px 10px;font-size:12px;color:#aaa;cursor:pointer;font-family:inherit;}
+.del-btn:hover{color:#e24b4a;border-color:#e24b4a;}
+
+.editor-body{padding:16px;}
+.title-input{width:100%;border:none;font-size:18px;font-weight:500;color:#1a1a1a;font-family:inherit;outline:none;margin-bottom:14px;padding:0;}
+.title-input::placeholder{color:#ccc;}
+
+.section{margin-bottom:16px;}
+.section-label{font-size:11px;font-weight:500;color:#aaa;letter-spacing:0.05em;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.section-label::after{content:'';flex:1;height:0.5px;background:rgba(0,0,0,0.07);}
+.item-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
+.item-row{display:flex;align-items:flex-start;gap:8px;}
+.item-bullet{width:6px;height:6px;border-radius:50%;background:#d0d0d0;flex-shrink:0;margin-top:7px;}
+.item-check{width:16px;height:16px;border-radius:4px;border:1.5px solid rgba(0,0,0,0.18);flex-shrink:0;margin-top:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.item-check.checked{background:#1a1a1a;border-color:#1a1a1a;}
+.item-check.checked::after{content:'';display:block;width:4px;height:7px;border:1.5px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translate(-1px,-1px);}
+.item-input{flex:1;border:none;font-size:13px;color:#1a1a1a;font-family:inherit;outline:none;line-height:1.6;resize:none;background:transparent;padding:0;}
+.item-input::placeholder{color:#ccc;}
+.item-del{background:none;border:none;cursor:pointer;color:#ddd;font-size:13px;padding:0;line-height:1;flex-shrink:0;margin-top:4px;}
+.item-del:hover{color:#e24b4a;}
+.add-item-btn{display:inline-flex;align-items:center;gap:4px;background:transparent;border:none;font-size:12px;cursor:pointer;color:#bbb;font-family:inherit;padding:2px 0;}
+.add-item-btn:hover{color:#888;}
+.memo-textarea{width:100%;border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;padding:10px 12px;font-size:13px;color:#1a1a1a;background:#f8f8f5;font-family:inherit;outline:none;resize:vertical;min-height:120px;line-height:1.7;}
+.memo-textarea:focus{border-color:#378ADD;background:#fff;}
+
+/* AIまとめパネル */
+.ai-panel{background:#fff;border-radius:14px;border:0.5px solid #7f77dd;overflow:hidden;}
+.ai-panel-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#f8f8ff;border-bottom:0.5px solid rgba(127,119,221,0.2);}
+.ai-panel-title{font-size:13px;font-weight:500;color:#534ab7;display:flex;align-items:center;gap:6px;}
+.ai-panel-close{background:none;border:none;cursor:pointer;color:#aaa;font-size:16px;padding:0;}
+.ai-panel-close:hover{color:#534ab7;}
+.ai-panel-body{padding:16px;}
+.ai-loading{display:flex;align-items:center;gap:8px;font-size:13px;color:#888;padding:8px 0;}
+.ai-loading-dot{width:6px;height:6px;border-radius:50%;background:#7f77dd;animation:pulse 1.2s ease-in-out infinite;}
+.ai-loading-dot:nth-child(2){animation-delay:0.2s;}
+.ai-loading-dot:nth-child(3){animation-delay:0.4s;}
+@keyframes pulse{0%,100%{opacity:0.3;}50%{opacity:1;}}
+.ai-result{font-size:13px;color:#1a1a1a;line-height:1.8;white-space:pre-wrap;}
+.ai-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:0.5px solid rgba(0,0,0,0.07);}
+.ai-copy-btn{background:#eeedfe;color:#534ab7;border:0.5px solid #7f77dd;border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit;}
+.ai-copy-btn:hover{background:#CECBF6;}
+.ai-apply-btn{background:#1a1a1a;color:#fff;border:none;border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit;}
+.ai-apply-btn:hover{background:#333;}
+.ai-mode-btns{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.ai-mode-btn{padding:5px 12px;border-radius:20px;border:0.5px solid rgba(0,0,0,0.13);background:#fff;font-size:11px;cursor:pointer;color:#888;font-family:inherit;}
+.ai-mode-btn.active{background:#534ab7;color:#fff;border-color:#534ab7;}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#fff;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:8px 18px;font-size:13px;color:#1a1a1a;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:200;white-space:nowrap;box-shadow:0 2px 12px rgba(0,0,0,0.1);}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="container">
+  <a class="back-btn" href="ホーム.html">◀ ホームに戻る</a>
+  <h1>議事録 <span style="font-size:13px;color:#888;font-weight:400;">サポートチーム</span></h1>
+  <div class="layout">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-top">
+          <span class="sidebar-title">議事録一覧</span>
+          <button class="new-btn" onclick="newMinutes()">＋ 新規</button>
+        </div>
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input class="search-input" id="search-input" placeholder="キーワードで検索..." oninput="onSearch(this.value)">
+          <button class="search-clear" id="search-clear" style="display:none;" onclick="clearSearch()">×</button>
+        </div>
+      </div>
+      <div class="minutes-list" id="minutes-list"></div>
+    </div>
+    <div class="editor-area" id="editor-area">
+      <div class="no-select">議事録を選択するか、<br>新規作成してください</div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY='minutes_v1';
+const MEMBERS=[
+  {name:'植田',dot:'#b0b0b0'},
+  {name:'菅原',dot:'#e91e8c'},
+  {name:'吉崎',dot:'#378ADD'},
+  {name:'本郷',dot:'#f5c518'},
+  {name:'山口',dot:'#ff7f2a'},
+  {name:'鈴木',dot:'#3b9e5a'},
+];
+
+let state=loadState();
+let currentId=null;
+let saveTimer=null;
+let searchQuery='';
+let aiMode='all'; // all | memo | extract
+let aiVisible=false;
+
+function loadState(){
+  try{const s=localStorage.getItem(STORAGE_KEY);if(s)return JSON.parse(s);}catch(e){}
+  return{minutes:[]};
+}
+function saveState(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+function init(){renderList();if(state.minutes.length>0)openMinutes(state.minutes[0].id);}
+
+/* ===== 検索 ===== */
+function onSearch(q){
+  searchQuery=q.trim();
+  document.getElementById('search-clear').style.display=searchQuery?'block':'none';
+  renderList();
+}
+function clearSearch(){
+  document.getElementById('search-input').value='';
+  searchQuery='';
+  document.getElementById('search-clear').style.display='none';
+  renderList();
+}
+function matchesSearch(m){
+  if(!searchQuery)return true;
+  const q=searchQuery.toLowerCase();
+  const fields=[
+    m.title||'',
+    m.date||'',
+    m.memo||'',
+    ...(m.agenda||[]),
+    ...(m.decisions||[]),
+    ...(m.todos||[]).map(t=>t.text||t),
+  ].join(' ').toLowerCase();
+  return fields.includes(q);
+}
+function highlight(text,query){
+  if(!query)return esc(text);
+  const re=new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  return esc(text).replace(re,'<span class="search-highlight">$1</span>');
+}
+
+function renderList(){
+  const list=document.getElementById('minutes-list');
+  const filtered=state.minutes.filter(matchesSearch);
+  if(filtered.length===0){
+    list.innerHTML=`<div class="empty-list">${searchQuery?'該当する議事録がありません':'議事録がありません'}</div>`;return;
+  }
+  list.innerHTML=filtered.map(m=>{
+    const isActive=m.id===currentId;
+    const title=m.title||'（タイトルなし）';
+    const untitled=!m.title;
+    // スニペット：検索ワードがある場合は周辺テキストを表示
+    let snippet='';
+    if(searchQuery){
+      const q=searchQuery.toLowerCase();
+      const fields=[m.memo||'',...(m.agenda||[]),...(m.decisions||[]),...(m.todos||[]).map(t=>t.text||t)];
+      for(const f of fields){
+        const idx=f.toLowerCase().indexOf(q);
+        if(idx>=0){snippet=f.slice(Math.max(0,idx-10),idx+30)+'...';break;}
+      }
+    }
+    return `<div class="minutes-item${isActive?' active':''}" onclick="openMinutes('${m.id}')">
+      <div class="minutes-item-date">${m.date||'日付なし'}</div>
+      <div class="minutes-item-title${untitled?' untitled':''}">${highlight(title,searchQuery)}</div>
+      ${snippet?`<div class="minutes-item-snippet">${highlight(snippet,searchQuery)}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function newMinutes(){
+  const now=new Date();
+  const dateStr=`${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+  const m={id:uid(),date:dateStr,title:'',attendees:MEMBERS.map(mb=>mb.name),agenda:[],decisions:[],todos:[],memo:'',createdAt:new Date().toISOString()};
+  state.minutes.unshift(m);saveState();currentId=m.id;aiVisible=false;
+  renderList();renderEditor(m);
+}
+
+function openMinutes(id){
+  currentId=id;aiVisible=false;
+  const m=state.minutes.find(m=>m.id===id);if(!m)return;
+  renderList();renderEditor(m);
+}
+function getM(){return state.minutes.find(m=>m.id===currentId);}
+function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{saveState();renderList();},400);}
+
+function renderEditor(m){
+  const area=document.getElementById('editor-area');
+  const attendeeChips=MEMBERS.map(mb=>{
+    const on=m.attendees.includes(mb.name);
+    return `<div class="attendee-chip${on?' on':''}" style="background:${mb.dot}22;border-color:${on?mb.dot:'transparent'};" onclick="toggleAttendee('${mb.name}')">
+      <div class="attendee-dot" style="background:${mb.dot};"></div>${mb.name}
+    </div>`;
+  }).join('');
+  const agendaRows=(m.agenda||[]).map((item,i)=>buildItemRow('agenda',i,item,false)).join('');
+  const decisionRows=(m.decisions||[]).map((item,i)=>buildItemRow('decisions',i,item,false)).join('');
+  const todoRows=(m.todos||[]).map((item,i)=>buildItemRow('todos',i,item,true)).join('');
+
+  let html=`<div class="editor-card">
+    <div class="editor-toolbar">
+      <div class="toolbar-left">
+        <input class="date-input" type="date" id="f-date" value="${toInputDate(m.date)}" onchange="updateDate(this.value)">
+        <div class="attendees-wrap" id="attendees-wrap">${attendeeChips}</div>
+      </div>
+      <div class="toolbar-right">
+        <button class="ai-btn" onclick="toggleAiPanel()" id="ai-btn">✨ AIまとめ</button>
+        <button class="export-btn" onclick="exportTxt()">テキスト出力</button>
+        <button class="del-btn" onclick="deleteMinutes()">削除</button>
+      </div>
+    </div>
+    <div class="editor-body">
+      <input class="title-input" type="text" id="f-title" placeholder="タイトルを入力" value="${esc(m.title)}" oninput="updateTitle(this.value)">
+      <div class="section"><div class="section-label">アジェンダ</div>
+        <div class="item-list" id="list-agenda">${agendaRows}</div>
+        <button class="add-item-btn" onclick="addItem('agenda')">＋ 追加</button>
+      </div>
+      <div class="section"><div class="section-label">決定事項</div>
+        <div class="item-list" id="list-decisions">${decisionRows}</div>
+        <button class="add-item-btn" onclick="addItem('decisions')">＋ 追加</button>
+      </div>
+      <div class="section"><div class="section-label">ToDo・次回アクション</div>
+        <div class="item-list" id="list-todos">${todoRows}</div>
+        <button class="add-item-btn" onclick="addItem('todos')">＋ 追加</button>
+      </div>
+      <div class="section"><div class="section-label">議事メモ</div>
+        <textarea class="memo-textarea" id="f-memo" placeholder="話し合った内容のメモなど自由に記入" oninput="updateMemo(this.value)">${esc(m.memo)}</textarea>
+      </div>
+    </div>
+  </div>`;
+
+  // AIパネル
+  if(aiVisible){
+    html+=`<div class="ai-panel">
+      <div class="ai-panel-header">
+        <div class="ai-panel-title">✨ AIまとめ</div>
+        <button class="ai-panel-close" onclick="toggleAiPanel()">×</button>
+      </div>
+      <div class="ai-panel-body">
+        <div class="ai-mode-btns">
+          <button class="ai-mode-btn${aiMode==='all'?' active':''}" onclick="setAiMode('all')">議事録全体をまとめる</button>
+          <button class="ai-mode-btn${aiMode==='memo'?' active':''}" onclick="setAiMode('memo')">メモを文章に整える</button>
+          <button class="ai-mode-btn${aiMode==='extract'?' active':''}" onclick="setAiMode('extract')">決定事項・ToDoを抽出</button>
+        </div>
+        <div id="ai-content"><div style="font-size:13px;color:#aaa;">上のボタンを選んで「生成」を押してください</div></div>
+        <div class="ai-actions">
+          <button class="ai-copy-btn" onclick="copyAiResult()">コピー</button>
+          <button class="ai-apply-btn" onclick="runAi()" id="ai-run-btn">✨ 生成</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  area.innerHTML=html;
+  area.querySelectorAll('.item-input').forEach(autoResize);
+}
+
+function buildItemRow(section,i,item,withCheck){
+  const checkEl=withCheck
+    ?`<div class="item-check${item.done?' checked':''}" onclick="toggleTodo(${i})"></div>`
+    :`<div class="item-bullet"></div>`;
+  const doneStyle=(withCheck&&item.done)?'style="text-decoration:line-through;color:#bbb;"':'';
+  return `<div class="item-row" id="row-${section}-${i}">
+    ${checkEl}
+    <textarea class="item-input" rows="1" placeholder="入力..." ${doneStyle}
+      oninput="updateItem('${section}',${i},this.value);autoResize(this)"
+      onkeydown="handleItemKey(event,'${section}',${i})"
+      onfocus="autoResize(this)"
+    >${esc(item.text||item)}</textarea>
+    <button class="item-del" onclick="deleteItem('${section}',${i})">×</button>
+  </div>`;
+}
+function autoResize(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}
+function updateTitle(v){const m=getM();if(!m)return;m.title=v;scheduleSave();}
+function updateDate(v){const m=getM();if(!m)return;m.date=v.replace(/-/g,'/');scheduleSave();}
+function updateMemo(v){const m=getM();if(!m)return;m.memo=v;scheduleSave();}
+function toggleAttendee(name){
+  const m=getM();if(!m)return;
+  const idx=m.attendees.indexOf(name);
+  if(idx>=0)m.attendees.splice(idx,1);else m.attendees.push(name);
+  saveState();
+  const wrap=document.getElementById('attendees-wrap');
+  wrap.innerHTML=MEMBERS.map(mb=>{
+    const on=m.attendees.includes(mb.name);
+    return `<div class="attendee-chip${on?' on':''}" style="background:${mb.dot}22;border-color:${on?mb.dot:'transparent'};" onclick="toggleAttendee('${mb.name}')">
+      <div class="attendee-dot" style="background:${mb.dot};"></div>${mb.name}
+    </div>`;
+  }).join('');
+}
+function addItem(section){
+  const m=getM();if(!m)return;
+  if(section==='todos')m.todos.push({text:'',done:false});else m[section].push('');
+  saveState();
+  const list=document.getElementById(`list-${section}`);
+  const i=m[section].length-1;
+  const div=document.createElement('div');
+  div.innerHTML=buildItemRow(section,i,m[section][i],section==='todos');
+  list.appendChild(div.firstElementChild);
+  const ta=list.lastElementChild.querySelector('.item-input');
+  if(ta){ta.focus();autoResize(ta);}
+}
+function updateItem(section,i,v){
+  const m=getM();if(!m)return;
+  if(section==='todos')m.todos[i].text=v;else m[section][i]=v;
+  scheduleSave();
+}
+function handleItemKey(e,section,i){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();addItem(section);}}
+function toggleTodo(i){
+  const m=getM();if(!m)return;m.todos[i].done=!m.todos[i].done;saveState();
+  const row=document.getElementById(`row-todos-${i}`);if(!row)return;
+  const chk=row.querySelector('.item-check');const ta=row.querySelector('.item-input');
+  if(m.todos[i].done){chk.classList.add('checked');ta.style.textDecoration='line-through';ta.style.color='#bbb';}
+  else{chk.classList.remove('checked');ta.style.textDecoration='';ta.style.color='';}
+}
+function deleteItem(section,i){
+  const m=getM();if(!m)return;m[section].splice(i,1);saveState();
+  const list=document.getElementById(`list-${section}`);
+  list.innerHTML=m[section].map((item,idx)=>buildItemRow(section,idx,item,section==='todos')).join('');
+  list.querySelectorAll('.item-input').forEach(autoResize);
+}
+function deleteMinutes(){
+  if(!confirm('この議事録を削除しますか？'))return;
+  state.minutes=state.minutes.filter(m=>m.id!==currentId);
+  currentId=null;aiVisible=false;saveState();renderList();
+  document.getElementById('editor-area').innerHTML='<div class="no-select">議事録を選択するか、<br>新規作成してください</div>';
+}
+function exportTxt(){
+  const m=getM();if(!m)return;
+  const attendeeNames=MEMBERS.filter(mb=>m.attendees.includes(mb.name)).map(mb=>mb.name).join('・');
+  let txt=`■ ${m.title||'（タイトルなし）'}\n日時：${m.date||''}\n参加者：${attendeeNames}\n\n`;
+  if((m.agenda||[]).length>0){txt+=`【アジェンダ】\n`;m.agenda.forEach(a=>{txt+=`・${a}\n`;});txt+='\n';}
+  if((m.decisions||[]).length>0){txt+=`【決定事項】\n`;m.decisions.forEach(d=>{txt+=`・${d}\n`;});txt+='\n';}
+  if((m.todos||[]).length>0){txt+=`【ToDo】\n`;m.todos.forEach(t=>{txt+=`${t.done?'[完了]':'[未完]'} ${t.text}\n`;});txt+='\n';}
+  if(m.memo){txt+=`【議事メモ】\n${m.memo}\n`;}
+  const blob=new Blob([txt],{type:'text/plain;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`議事録_${(m.date||'').replace(/\//g,'')}.txt`;a.click();
+  showToast('テキストファイルを出力しました');
+}
+
+/* ===== AIまとめ ===== */
+function toggleAiPanel(){
+  aiVisible=!aiVisible;
+  const m=getM();if(m)renderEditor(m);
+}
+function setAiMode(mode){
+  aiMode=mode;
+  document.querySelectorAll('.ai-mode-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+async function runAi(){
+  const m=getM();if(!m)return;
+  const btn=document.getElementById('ai-run-btn');
+  const content=document.getElementById('ai-content');
+  btn.disabled=true;btn.textContent='生成中...';
+  content.innerHTML=`<div class="ai-loading"><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><div class="ai-loading-dot"></div><span>AIが処理中です...</span></div>`;
+
+  const attendeeNames=MEMBERS.filter(mb=>m.attendees.includes(mb.name)).map(mb=>mb.name).join('、');
+  const minutesText=buildMinutesText(m,attendeeNames);
+
+  let prompt='';
+  if(aiMode==='all'){
+    prompt=`以下の議事録の内容を、整った読みやすい議事録の形式にまとめてください。アジェンダ・決定事項・ToDo・議事メモを整理し、わかりやすく簡潔にまとめてください。\n\n${minutesText}`;
+  }else if(aiMode==='memo'){
+    prompt=`以下の議事メモを、自然で読みやすい文章に整えてください。箇条書きのメモを、流れのわかる文章にしてください。\n\n【議事メモ】\n${m.memo||'（メモなし）'}`;
+  }else if(aiMode==='extract'){
+    prompt=`以下の議事録から、決定事項とToDo（次回アクション）を抽出・整理してください。担当者が明記されている場合は含めてください。\n\n${minutesText}`;
+  }
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data=await res.json();
+    const text=data.content?.map(c=>c.text||'').join('')||'（結果を取得できませんでした）';
+    content.innerHTML=`<div class="ai-result">${esc(text)}</div>`;
+  }catch(e){
+    content.innerHTML=`<div style="font-size:13px;color:#e24b4a;">エラーが発生しました。インターネット接続を確認してください。</div>`;
+  }
+  btn.disabled=false;btn.textContent='✨ 生成';
+}
+
+function buildMinutesText(m,attendeeNames){
+  let txt=`タイトル：${m.title||'（なし）'}\n日時：${m.date||''}\n参加者：${attendeeNames}\n\n`;
+  if((m.agenda||[]).length>0){txt+=`【アジェンダ】\n${m.agenda.map(a=>`・${a}`).join('\n')}\n\n`;}
+  if((m.decisions||[]).length>0){txt+=`【決定事項】\n${m.decisions.map(d=>`・${d}`).join('\n')}\n\n`;}
+  if((m.todos||[]).length>0){txt+=`【ToDo】\n${m.todos.map(t=>`・${t.text}`).join('\n')}\n\n`;}
+  if(m.memo){txt+=`【議事メモ】\n${m.memo}`;}
+  return txt;
+}
+
+function copyAiResult(){
+  const el=document.querySelector('.ai-result');
+  if(!el){showToast('まず生成してください');return;}
+  navigator.clipboard.writeText(el.textContent).then(()=>showToast('コピーしました')).catch(()=>showToast('コピーに失敗しました'));
+}
+
+function toInputDate(dateStr){if(!dateStr)return'';return dateStr.replace(/\//g,'-');}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+init();
+</script>
+</body>
+</html>
