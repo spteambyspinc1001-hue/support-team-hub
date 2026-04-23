@@ -146,12 +146,14 @@ h1{font-size:20px;font-weight:500;color:#1a1a1a;margin-bottom:1.25rem;}
   const auth = getAuth(app);
   const ADMIN_EMAILS = ["suzuki@support.com"];
 
+  const MEMBER_MAP = {'ueda.m@support-grp.jp': {'name': '植田', 'dot': '#b0b0b0', 'isAdmin': false}, 'tmuu1021@gmail.com': {'name': '菅原', 'dot': '#e91e8c', 'isAdmin': false}, 'yoshizaki.r@support-grp.jp': {'name': '吉崎', 'dot': '#378ADD', 'isAdmin': false}, 'harukahongo0513@gmail.com': {'name': '本郷', 'dot': '#f5c518', 'isAdmin': false}, 'yamaguchi.h@support-grp.jp': {'name': '山口', 'dot': '#ff7f2a', 'isAdmin': false}, 'suzuki@support.com': {'name': '鈴木', 'dot': '#3b9e5a', 'isAdmin': true}};
   onAuthStateChanged(auth, (user) => {
     if (user) {
       document.getElementById('firebase-login-screen').style.display = 'none';
       document.getElementById('firebase-app-content').style.display = 'block';
-      const isAdmin = ADMIN_EMAILS.includes(user.email);
-      window.firebaseUser = { email: user.email, isAdmin };
+      const memberInfo = MEMBER_MAP[user.email] || { name: user.email, dot: '#888', isAdmin: false };
+      const isAdmin = memberInfo.isAdmin;
+      window.firebaseUser = { email: user.email, isAdmin, name: memberInfo.name, dot: memberInfo.dot };
       window.dispatchEvent(new Event('firebase-ready'));
     } else {
       document.getElementById('firebase-login-screen').style.display = 'flex';
@@ -261,19 +263,17 @@ window.addEventListener('firebase-ready', function() {
 <script>
 const STORAGE_KEY='pl_v1';
 const MEMBERS=[
-  {name:'植田',dot:'#b0b0b0',pw:'ueda2024'},
-  {name:'菅原',dot:'#e91e8c',pw:'sugawara2024'},
-  {name:'吉崎',dot:'#378ADD',pw:'yoshizaki2024'},
-  {name:'本郷',dot:'#f5c518',pw:'hongo2024'},
-  {name:'山口',dot:'#ff7f2a',pw:'yamaguchi2024'},
-  {name:'鈴木',dot:'#3b9e5a',pw:'suzuki2024',isAdmin:true},
+  {name:'植田',dot:'#b0b0b0'},
+  {name:'菅原',dot:'#e91e8c'},
+  {name:'吉崎',dot:'#378ADD'},
+  {name:'本郷',dot:'#f5c518'},
+  {name:'山口',dot:'#ff7f2a'},
+  {name:'鈴木',dot:'#3b9e5a',isAdmin:true},
 ];
 
 let state=loadState();
 let curUser=null;
 let curYear,curMonth;
-let selectedLoginMember=null;
-// 各メンバーカードの表示タブ: 'goals' | 'approval'
 let cardTabs={};
 
 function loadState(){
@@ -290,61 +290,34 @@ function getGoals(y,m,n){
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function getStatus(g){if(g.status)return g.status;if(g.achieved)return'achieved';return'';}
 
+// Firebase-readyイベントで初期化
+window.addEventListener('firebase-ready', function() {
+  const fbUser = window.firebaseUser;
+  if(fbUser && !curUser) {
+    curUser = MEMBERS.find(m => m.name === fbUser.name) || {name: fbUser.name, dot: fbUser.dot||'#888', isAdmin: fbUser.isAdmin};
+    const now = new Date(); curYear = now.getFullYear(); curMonth = now.getMonth();
+    render();
+  }
+});
+
 async function init(){
-  const now=new Date();curYear=now.getFullYear();curMonth=now.getMonth();
-  const saved=sessionStorage.getItem('pl_user');
-  if(saved)curUser=MEMBERS.find(m=>m.name===saved)||null;
-  render();
+  if(window.firebaseUser && !curUser){
+    const fbUser = window.firebaseUser;
+    curUser = MEMBERS.find(m => m.name === fbUser.name) || {name: fbUser.name, dot: fbUser.dot||'#888', isAdmin: fbUser.isAdmin};
+    const now = new Date(); curYear = now.getFullYear(); curMonth = now.getMonth();
+    render();
+  }
 }
 
 function render(){
-  if(!curUser){renderLogin();return;}
+  if(!curUser){
+    document.getElementById('app').innerHTML='<div style="padding:2rem;text-align:center;color:#aaa;">ログイン情報を確認中...</div>';
+    return;
+  }
   renderMain();
 }
 
-/* ===== ログイン ===== */
-function renderLogin(){
-  document.getElementById('app').innerHTML=`
-    <div class="login-screen">
-      <div class="login-card">
-        <div class="login-title">PL・達成管理にログイン</div>
-        <div class="login-sub">メンバーを選んでパスワードを入力してください</div>
-        <div class="login-members">
-          ${MEMBERS.map(m=>`
-            <button class="member-login-btn" onclick="selectMember('${m.name}')">
-              <div class="member-login-dot" style="background:${m.dot};"></div>
-              ${m.name}${m.isAdmin?' （管理者）':''}
-            </button>`).join('')}
-        </div>
-        <div class="pw-section" id="pw-section" style="display:none;">
-          <div class="pw-label" id="pw-label">パスワードを入力</div>
-          <input class="pw-input" type="password" id="pw-input" placeholder="パスワード" onkeydown="if(event.key==='Enter')doLogin()">
-          <div class="pw-error" id="pw-error"></div>
-          <button class="pw-submit" onclick="doLogin()">ログイン</button>
-        </div>
-      </div>
-    </div>`;
-}
-function selectMember(name){
-  selectedLoginMember=name;
-  document.getElementById('pw-section').style.display='block';
-  document.getElementById('pw-label').textContent=`${name} のパスワードを入力`;
-  document.getElementById('pw-error').textContent='';
-  document.getElementById('pw-input').value='';
-  setTimeout(()=>document.getElementById('pw-input').focus(),50);
-}
-function doLogin(){
-  if(!selectedLoginMember)return;
-  const pw=document.getElementById('pw-input').value;
-  const member=MEMBERS.find(m=>m.name===selectedLoginMember);
-  if(member&&pw===member.pw){
-    curUser=member;sessionStorage.setItem('pl_user',member.name);render();
-  }else{
-    document.getElementById('pw-error').textContent='パスワードが違います';
-    document.getElementById('pw-input').value='';document.getElementById('pw-input').focus();
-  }
-}
-function logout(){curUser=null;selectedLoginMember=null;sessionStorage.removeItem('pl_user');render();}
+function logout(){window.firebaseLogout();}
 
 /* ===== メイン ===== */
 function renderMain(){
@@ -353,7 +326,6 @@ function renderMain(){
       <div class="user-info">
         <div class="user-dot" style="background:${curUser.dot};"></div>
         <div class="user-name">${curUser.name}${curUser.isAdmin?' （管理者）':''}</div>
-        <button class="logout-btn" onclick="logout()">ログアウト</button>
       </div>
       <div class="month-nav">
         <button class="nav-btn" onclick="changeMonth(-1)">◀</button>
@@ -369,14 +341,6 @@ function renderMain(){
   renderSummary();
   renderAllCards();
 }
-function changeMonth(d){
-  curMonth+=d;if(curMonth>11){curMonth=0;curYear++;}if(curMonth<0){curMonth=11;curYear--;}
-  document.getElementById('month-title').textContent=`${curYear}年${curMonth+1}月`;
-  renderSummary();renderAllCards();
-}
-function goToday(){const now=new Date();curYear=now.getFullYear();curMonth=now.getMonth();
-  document.getElementById('month-title').textContent=`${curYear}年${curMonth+1}月`;
-  renderSummary();renderAllCards();}
 
 function renderSummary(){
   const data=MEMBERS.filter(m=>!m.isAdmin).map(mb=>{

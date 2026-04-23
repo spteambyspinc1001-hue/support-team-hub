@@ -161,12 +161,14 @@ h1{font-size:20px;font-weight:500;color:#1a1a1a;margin-bottom:1.25rem;}
   const auth = getAuth(app);
   const ADMIN_EMAILS = ["suzuki@support.com"];
 
+  const MEMBER_MAP = {'ueda.m@support-grp.jp': {'name': '植田', 'dot': '#b0b0b0', 'isAdmin': false}, 'tmuu1021@gmail.com': {'name': '菅原', 'dot': '#e91e8c', 'isAdmin': false}, 'yoshizaki.r@support-grp.jp': {'name': '吉崎', 'dot': '#378ADD', 'isAdmin': false}, 'harukahongo0513@gmail.com': {'name': '本郷', 'dot': '#f5c518', 'isAdmin': false}, 'yamaguchi.h@support-grp.jp': {'name': '山口', 'dot': '#ff7f2a', 'isAdmin': false}, 'suzuki@support.com': {'name': '鈴木', 'dot': '#3b9e5a', 'isAdmin': true}};
   onAuthStateChanged(auth, (user) => {
     if (user) {
       document.getElementById('firebase-login-screen').style.display = 'none';
       document.getElementById('firebase-app-content').style.display = 'block';
-      const isAdmin = ADMIN_EMAILS.includes(user.email);
-      window.firebaseUser = { email: user.email, isAdmin };
+      const memberInfo = MEMBER_MAP[user.email] || { name: user.email, dot: '#888', isAdmin: false };
+      const isAdmin = memberInfo.isAdmin;
+      window.firebaseUser = { email: user.email, isAdmin, name: memberInfo.name, dot: memberInfo.dot };
       window.dispatchEvent(new Event('firebase-ready'));
     } else {
       document.getElementById('firebase-login-screen').style.display = 'flex';
@@ -290,20 +292,44 @@ window.addEventListener('firebase-ready', function() {
 const NIPPO_KEY='nippe_v3';
 const SHIFT_KEY='shiftapp_v5';
 const MEMBERS=[
-  {name:'植田',dot:'#b0b0b0',pw:'ueda2024'},
-  {name:'菅原',dot:'#e91e8c',pw:'sugawara2024'},
-  {name:'吉崎',dot:'#378ADD',pw:'yoshizaki2024'},
-  {name:'本郷',dot:'#f5c518',pw:'hongo2024'},
-  {name:'山口',dot:'#ff7f2a',pw:'yamaguchi2024'},
-  {name:'鈴木',dot:'#3b9e5a',pw:'suzuki2024',isAdmin:true},
+  {name:'植田',dot:'#b0b0b0'},
+  {name:'菅原',dot:'#e91e8c'},
+  {name:'吉崎',dot:'#378ADD'},
+  {name:'本郷',dot:'#f5c518'},
+  {name:'山口',dot:'#ff7f2a'},
+  {name:'鈴木',dot:'#3b9e5a',isAdmin:true},
 ];
 
 let state=loadState();
-let curUser=null; // ログイン中のメンバー
+let curUser=null;
 let curYear,curMonth,curDay;
-let viewMode='all'; // 'all' | 'mine'
+let viewMode='all';
 let holidays={};
-let selectedLoginMember=null;
+
+function loadState(){
+  try{const s=localStorage.getItem(NIPPO_KEY);if(s)return JSON.parse(s);}catch(e){}
+  return{reports:{}};
+}
+function saveState(){try{localStorage.setItem(NIPPO_KEY,JSON.stringify(state));}catch(e){}}
+function rk(y,m,d,n){return `${y}-${m+1}-${d}-${n}`;}
+function getReport(y,m,d,n){
+  const k=rk(y,m,d,n);
+  if(!state.reports[k])state.reports[k]={tasks:[],memo:'',handovers:[],closed:false};
+  return state.reports[k];
+}
+
+// Firebaseログイン情報からメンバー情報を取得して初期化
+window.addEventListener('firebase-ready', async function() {
+  const fbUser = window.firebaseUser;
+  if(fbUser) {
+    curUser = MEMBERS.find(m => m.name === fbUser.name) || {name: fbUser.name, dot: fbUser.dot||'#888', isAdmin: fbUser.isAdmin};
+    viewMode = curUser.isAdmin ? 'all' : 'mine';
+    const now = new Date();
+    curYear = now.getFullYear(); curMonth = now.getMonth(); curDay = now.getDate();
+    await fetchHolidays(curYear);
+    render();
+  }
+});
 
 function loadState(){
   try{const s=localStorage.getItem(NIPPO_KEY);if(s)return JSON.parse(s);}catch(e){}
@@ -348,77 +374,29 @@ function getShiftMinutes(y,m,d,name){
 }
 
 async function init(){
-  const now=new Date();
-  curYear=now.getFullYear();curMonth=now.getMonth();curDay=now.getDate();
-  // セッションストレージからログイン状態を復元
-  const saved=sessionStorage.getItem('nippo_user');
-  if(saved){curUser=MEMBERS.find(m=>m.name===saved)||null;}
-  await fetchHolidays(curYear);
-  render();
-}
-
-function render(){
-  if(!curUser){renderLogin();return;}
-  renderMain();
-}
-
-/* ===== ログイン画面 ===== */
-function renderLogin(){
-  document.getElementById('app').innerHTML=`
-    <div class="login-screen">
-      <div class="login-card">
-        <div class="login-title">日報にログイン</div>
-        <div class="login-sub">メンバーを選んでパスワードを入力してください</div>
-        <div class="login-members" id="login-members">
-          ${MEMBERS.map(m=>`
-            <button class="member-login-btn" onclick="selectLoginMember('${m.name}')">
-              <div class="member-login-dot" style="background:${m.dot};"></div>
-              ${m.name}${m.isAdmin?' （管理者）':''}
-            </button>`).join('')}
-        </div>
-        <div class="pw-section" id="pw-section" style="display:none;">
-          <div class="pw-label" id="pw-label">パスワードを入力</div>
-          <input class="pw-input" type="password" id="pw-input" placeholder="パスワード" onkeydown="if(event.key==='Enter')doLogin()">
-          <div class="pw-error" id="pw-error"></div>
-          <button class="pw-submit" onclick="doLogin()">ログイン</button>
-        </div>
-      </div>
-    </div>`;
-}
-
-function selectLoginMember(name){
-  selectedLoginMember=name;
-  document.getElementById('pw-section').style.display='block';
-  document.getElementById('pw-label').textContent=`${name} のパスワードを入力`;
-  document.getElementById('pw-error').textContent='';
-  document.getElementById('pw-input').value='';
-  setTimeout(()=>document.getElementById('pw-input').focus(),50);
-  // ボタンのハイライト
-  document.querySelectorAll('.member-login-btn').forEach(btn=>{
-    btn.style.background=btn.textContent.trim().startsWith(name)?'#f0f0eb':'';
-  });
-}
-
-function doLogin(){
-  if(!selectedLoginMember)return;
-  const pw=document.getElementById('pw-input').value;
-  const member=MEMBERS.find(m=>m.name===selectedLoginMember);
-  if(member&&pw===member.pw){
-    curUser=member;
-    sessionStorage.setItem('nippo_user',member.name);
-    viewMode=member.isAdmin?'all':'mine';
+  // Firebase-readyイベントで初期化されるので、ここでは何もしない
+  // すでにfirebase-readyが発火済みの場合に備えて
+  if(window.firebaseUser && !curUser){
+    const fbUser = window.firebaseUser;
+    curUser = MEMBERS.find(m => m.name === fbUser.name) || {name: fbUser.name, dot: fbUser.dot||'#888', isAdmin: fbUser.isAdmin};
+    viewMode = curUser.isAdmin ? 'all' : 'mine';
+    const now = new Date();
+    curYear = now.getFullYear(); curMonth = now.getMonth(); curDay = now.getDate();
+    await fetchHolidays(curYear);
     render();
-  }else{
-    document.getElementById('pw-error').textContent='パスワードが違います';
-    document.getElementById('pw-input').value='';
-    document.getElementById('pw-input').focus();
   }
 }
 
+function render(){
+  if(!curUser){
+    document.getElementById('app').innerHTML='<div style="padding:2rem;text-align:center;color:#aaa;">ログイン情報を確認中...</div>';
+    return;
+  }
+  renderMain();
+}
+
 function logout(){
-  curUser=null;selectedLoginMember=null;
-  sessionStorage.removeItem('nippo_user');
-  render();
+  window.firebaseLogout();
 }
 
 /* ===== メイン画面 ===== */
@@ -434,7 +412,6 @@ function renderMain(){
       <div class="user-info">
         <div class="user-dot" style="background:${curUser.dot};"></div>
         <div class="user-name">${curUser.name}${isAdmin?' （管理者）':''}</div>
-        <button class="logout-btn" onclick="logout()">ログアウト</button>
       </div>
       <div class="view-toggle">
         <button class="view-btn${viewMode==='mine'?' active':''}" onclick="setView('mine')">自分の日報</button>
