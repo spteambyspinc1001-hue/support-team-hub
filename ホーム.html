@@ -50,7 +50,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Ar
 };
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
-  const ADMIN_EMAILS = ["suzuki@support.com"];
+  const ADMIN_EMAILS = ["orevo.ruka@gmail.com"];
 
   onAuthStateChanged(auth, (user) => {
     if (user) {
@@ -214,6 +214,20 @@ window.addEventListener('firebase-ready', function() {
   const bar = document.getElementById('firebase-user-bar');
   if(bar && window.firebaseUser) {
     document.getElementById('firebase-user-email').textContent = window.firebaseUser.email;
+    
+    // 管理者ユーザーの場合、招待ボタンを表示
+    if(window.firebaseUser.isAdmin) {
+      console.log('✅ 管理者ユーザーです。招待ボタンを追加します。');
+      
+      const btn = document.createElement('button');
+      btn.textContent = '＋ メンバー招待';
+      btn.style.cssText = 'font-size:12px;color:#fff;background:#3b9e5a;border:none;border-radius:7px;padding:4px 10px;cursor:pointer;font-family:inherit;';
+      btn.onclick = function() { document.getElementById('invite-modal-bg').style.display = 'flex'; };
+      bar.insertBefore(btn, bar.firstChild);
+    } else {
+      console.log('❌ 管理者ユーザーではありません。招待ボタンは表示されません。');
+      console.log('現在のユーザー:', window.firebaseUser);
+    }
   }
 });
 </script>
@@ -315,6 +329,164 @@ window.addEventListener('firebase-ready', function() {
     </div>
   </div>
 </div>
+
+<!-- 招待モーダル -->
+<div id="invite-modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.25);z-index:9998;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:14px;padding:1.5rem;width:380px;margin:1rem;">
+    <div style="font-size:15px;font-weight:500;margin-bottom:4px;">メンバーを招待</div>
+    <div style="font-size:12px;color:#aaa;margin-bottom:1rem;">メアドを入力して招待メールを送ります</div>
+    <div style="font-size:11px;color:#aaa;margin-bottom:4px;">名前</div>
+    <select id="invite-name" style="width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:9px 10px;font-size:13px;font-family:inherit;outline:none;margin-bottom:10px;background:#fff;">
+      <option value="">選択してください</option>
+      <option value="植田">植田</option>
+      <option value="菅原">菅原</option>
+      <option value="吉崎">吉崎</option>
+      <option value="本郷">本郷</option>
+      <option value="山口">山口</option>
+      <option value="鈴木">鈴木</option>
+    </select>
+    <div style="font-size:11px;color:#aaa;margin-bottom:4px;">メールアドレス</div>
+    <input id="invite-email" type="email" placeholder="example@company.com" style="width:100%;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:9px 10px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px;">
+    <div id="invite-error" style="font-size:12px;color:#e24b4a;min-height:16px;margin-bottom:4px;"></div>
+    <div id="invite-success" style="font-size:12px;color:#3b9e5a;min-height:16px;margin-bottom:8px;"></div>
+    <div id="invite-link-area" style="display:none;margin-bottom:10px;padding:10px;background:#f8f8f5;border-radius:8px;">
+      <div style="font-size:11px;color:#aaa;margin-bottom:4px;">パスワード設定リンク（このリンクをメンバーに送ってください）</div>
+      <input id="invite-link" readonly style="width:100%;border:0.5px solid rgba(0,0,0,0.13);border-radius:6px;padding:6px 8px;font-size:11px;color:#378ADD;background:#fff;font-family:inherit;outline:none;" onclick="this.select();">
+      <button onclick="navigator.clipboard.writeText(document.getElementById('invite-link').value);document.getElementById('invite-copy-msg').textContent='コピーしました！';" style="margin-top:6px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit;">リンクをコピー</button>
+      <span id="invite-copy-msg" style="font-size:11px;color:#3b9e5a;margin-left:8px;"></span>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="document.getElementById('invite-modal-bg').style.display='none'" style="background:transparent;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:13px;color:#888;font-family:inherit;">閉じる</button>
+      <button id="invite-submit-btn" onclick="sendInvite()" style="background:#1a1a1a;border:none;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:13px;color:#fff;font-family:inherit;">招待する</button>
+    </div>
+  </div>
+</div>
+<script>
+async function sendInvite() {
+  const name = document.getElementById('invite-name').value;
+  const email = document.getElementById('invite-email').value.trim();
+  const errEl = document.getElementById('invite-error');
+  const successEl = document.getElementById('invite-success');
+  const linkArea = document.getElementById('invite-link-area');
+  errEl.textContent = '';
+  successEl.textContent = '';
+  linkArea.style.display = 'none';
+  document.getElementById('invite-copy-msg').textContent = '';
+  
+  if (!name) { errEl.textContent = '名前を選択してください'; return; }
+  if (!email) { errEl.textContent = 'メアドを入力してください'; return; }
+  
+  document.getElementById('invite-submit-btn').disabled = true;
+  document.getElementById('invite-submit-btn').textContent = '生成中...';
+  
+  try {
+    // 仮パスワードを生成
+    const tempPassword = Math.random().toString(36).slice(-10) + 'A1!';
+    
+    // Cloud Functions を試す（失敗してもローカル生成に fallback）
+    let useCloudFunction = false;
+    try {
+      const INVITE_URL = 'https://us-central1-support-team-hub-61ed6.cloudfunctions.net/inviteUser';
+      const res = await fetch(INVITE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, displayName: name, tempPassword })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          useCloudFunction = true;
+          console.log('✅ Cloud Functions で招待ユーザーを作成');
+        }
+      }
+    } catch(e) {
+      console.log('⚠️ Cloud Functions は利用できません。ローカル生成します。', e.message);
+    }
+    
+    // Cloud Functions が失敗した場合、ローカルで処理
+    if (!useCloudFunction) {
+      try {
+        // Firebase Auth でユーザーを作成（仮パスワード）
+        const { auth } = window;
+        if (auth) {
+          const userCred = await auth.createUserWithEmailAndPassword(email, tempPassword);
+          await auth.updateProfile(userCred.user, { displayName: name });
+          console.log('✅ Firebase Auth でユーザーを作成');
+        }
+      } catch(authError) {
+        if (authError.code === 'auth/email-already-in-use') {
+          console.log('⚠️ ユーザーはすでに存在します');
+        } else if (authError.code !== 'auth/internal-error') {
+          throw authError;
+        }
+      }
+    }
+    
+    // パスワード設定リンクを生成
+    const resetToken = btoa(email + '|' + Date.now() + '|' + tempPassword);
+    
+    // GitHub Pages / サーバー環境対応のリンク生成
+    let baseUrl;
+    const currentUrl = window.location.href;
+    
+    if (currentUrl.includes('github.io')) {
+      // GitHub Pages環境の場合
+      // https://user.github.io/repo-name/ホーム.html → https://user.github.io/repo-name/
+      const parts = currentUrl.split('/');
+      // 最後のファイル名を除去
+      parts.pop();
+      baseUrl = parts.join('/') + '/';
+    } else if (currentUrl.startsWith('file://')) {
+      // ローカルファイル環境の場合
+      const lastSlash = currentUrl.lastIndexOf('/');
+      baseUrl = currentUrl.substring(0, lastSlash + 1);
+    } else {
+      // その他のサーバー環境
+      const lastSlash = currentUrl.lastIndexOf('/');
+      baseUrl = currentUrl.substring(0, lastSlash + 1);
+    }
+    
+    const resetLink = baseUrl + 'set-password.html?email=' + encodeURIComponent(email) + '&token=' + encodeURIComponent(resetToken);
+    
+    // ローカルストレージに招待情報を保存
+    const inviteData = {
+      email: email,
+      name: name,
+      tempPassword: tempPassword,
+      token: resetToken,
+      createdAt: new Date().toISOString()
+    };
+    const invites = JSON.parse(localStorage.getItem('invites') || '[]');
+    invites.push(inviteData);
+    localStorage.setItem('invites', JSON.stringify(invites));
+    
+    successEl.textContent = name + 'さんの招待リンクを生成しました！';
+    document.getElementById('invite-link').value = resetLink;
+    linkArea.style.display = 'block';
+    
+    console.log('✅ 招待リンク生成完了');
+    console.log('メール:', email);
+    console.log('リセットリンク:', resetLink);
+    
+    // 成功後、フォームをリセット
+    setTimeout(() => {
+      document.getElementById('invite-name').value = '';
+      document.getElementById('invite-email').value = '';
+    }, 1500);
+    
+  } catch(e) {
+    console.error('招待エラー:', e);
+    errEl.textContent = 'エラーが発生しました: ' + (e.message || e);
+  }
+  
+  document.getElementById('invite-submit-btn').disabled = false;
+  document.getElementById('invite-submit-btn').textContent = '生成する';
+}
+
+// 管理者のみ招待ボタンを表示
+
+</script>
 </div>
 </body>
 </html>

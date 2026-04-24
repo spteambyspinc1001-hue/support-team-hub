@@ -144,7 +144,7 @@ h1{font-size:20px;font-weight:500;color:#1a1a1a;margin-bottom:1.25rem;}
 };
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
-  const ADMIN_EMAILS = ["suzuki@support.com"];
+  const ADMIN_EMAILS = ["orevo.ruka@gmail.com"];
 
   const MEMBER_MAP = {'ueda.m@support-grp.jp': {'name': '植田', 'dot': '#b0b0b0', 'isAdmin': false}, 'tmuu1021@gmail.com': {'name': '菅原', 'dot': '#e91e8c', 'isAdmin': false}, 'yoshizaki.r@support-grp.jp': {'name': '吉崎', 'dot': '#378ADD', 'isAdmin': false}, 'harukahongo0513@gmail.com': {'name': '本郷', 'dot': '#f5c518', 'isAdmin': false}, 'yamaguchi.h@support-grp.jp': {'name': '山口', 'dot': '#ff7f2a', 'isAdmin': false}, 'suzuki@support.com': {'name': '鈴木', 'dot': '#3b9e5a', 'isAdmin': true}};
   onAuthStateChanged(auth, (user) => {
