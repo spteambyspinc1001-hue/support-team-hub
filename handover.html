@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>引き継ぎ — サポートチーム</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh;}
+.container{max-width:1000px;margin:0 auto;padding:1.5rem 2rem;}
+.back-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#888;text-decoration:none;background:#f0f0eb;border:0.5px solid rgba(0,0,0,0.12);border-radius:8px;padding:5px 12px;margin-bottom:1rem;}
+h1{font-size:20px;font-weight:500;color:#1a1a1a;margin-bottom:1.25rem;}
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap;}
+.member-filter{padding:5px 10px;border-radius:20px;border:0.5px solid rgba(0,0,0,0.13);background:#fff;font-size:12px;cursor:pointer;color:#1a1a1a;font-family:inherit;outline:none;}
+.status-filter{padding:5px 12px;border-radius:20px;border:0.5px solid rgba(0,0,0,0.13);background:#fff;font-size:12px;cursor:pointer;color:#888;font-family:inherit;}
+.status-filter.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+
+.handover-list{display:flex;flex-direction:column;gap:12px;}
+.handover-card{background:#fff;border-radius:14px;border:0.5px solid rgba(0,0,0,0.08);border-left:4px solid #7f77dd;padding:16px 20px;}
+.handover-card.done-task{opacity:0.6;}
+.card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;}
+.task-title{font-size:15px;font-weight:500;color:#1a1a1a;line-height:1.4;}
+.status-badge{font-size:11px;border-radius:6px;padding:3px 9px;white-space:nowrap;flex-shrink:0;}
+.badge-todo{background:#f0f0eb;color:#888;}
+.badge-inprogress{background:#eef4fb;color:#185fa5;}
+.badge-review{background:#fef9e0;color:#7a6000;}
+.badge-done{background:#eaf3de;color:#3b6d11;}
+.handover-body{background:#f8f8f5;border-radius:8px;padding:12px 14px;margin-bottom:10px;font-size:13px;color:#333;line-height:1.7;white-space:pre-wrap;}
+.card-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.meta-item{display:flex;align-items:center;gap:4px;font-size:11px;color:#888;}
+.meta-dot{width:7px;height:7px;border-radius:50%;}
+.arrow{color:#ccc;font-size:12px;}
+.due-chip{font-size:11px;border-radius:5px;padding:2px 7px;background:#f5f5f0;color:#888;}
+.due-chip.overdue{background:#fcebeb;color:#a32d2d;}
+.due-chip.today{background:#fef9e0;color:#7a6000;}
+.go-task-btn{font-size:11px;background:none;border:0.5px solid rgba(0,0,0,0.13);border-radius:6px;padding:3px 10px;cursor:pointer;color:#888;font-family:inherit;margin-left:auto;}
+.go-task-btn:hover{background:#f0f0eb;}
+.empty{text-align:center;padding:4rem 1rem;font-size:14px;color:#bbb;}
+</style>
+</head>
+<body>
+<div class="container">
+  <a class="back-btn" href="タスク.html">◀ タスクに戻る</a>
+  <h1>引き継ぎ一覧 <span style="font-size:13px;color:#888;font-weight:400;">サポートチーム</span></h1>
+
+  <div class="toolbar">
+    <select class="member-filter" id="member-filter" onchange="render()">
+      <option value="all">全員</option>
+    </select>
+    <button class="status-filter active" onclick="setStatus('all',this)">すべて</button>
+    <button class="status-filter" onclick="setStatus('todo',this)">未着手</button>
+    <button class="status-filter" onclick="setStatus('inprogress',this)">進行中</button>
+    <button class="status-filter" onclick="setStatus('review',this)">レビュー待ち</button>
+    <button class="status-filter" onclick="setStatus('done',this)">完了</button>
+  </div>
+
+  <div class="handover-list" id="handover-list"></div>
+</div>
+
+<script>
+const STORAGE_KEY='tasks_v1';
+const MEMBERS=[
+  {name:'植田',dot:'#b0b0b0'},
+  {name:'菅原',dot:'#e91e8c'},
+  {name:'吉崎',dot:'#378ADD'},
+  {name:'本郷',dot:'#f5c518'},
+  {name:'山口',dot:'#ff7f2a'},
+  {name:'鈴木',dot:'#3b9e5a'},
+  {name:'サポートチーム',dot:'#7f77dd'},
+];
+const STATUS_LABEL={todo:'未着手',inprogress:'進行中',review:'レビュー待ち',done:'完了'};
+const STATUS_CLS={todo:'badge-todo',inprogress:'badge-inprogress',review:'badge-review',done:'badge-done'};
+
+let statusFilter='all';
+
+function loadTasks(){
+  try{const s=localStorage.getItem(STORAGE_KEY);return s?JSON.parse(s).tasks||[]:[]; }catch(e){return [];}
+}
+
+function init(){
+  const sel=document.getElementById('member-filter');
+  MEMBERS.forEach(m=>{const o=document.createElement('option');o.value=m.name;o.textContent=m.name;sel.appendChild(o);});
+  render();
+}
+
+function setStatus(s,btn){
+  statusFilter=s;
+  document.querySelectorAll('.status-filter').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function render(){
+  const memberF=document.getElementById('member-filter').value;
+  const tasks=loadTasks().filter(t=>{
+    if(!t.handover)return false;
+    if(memberF!=='all'&&t.member!==memberF&&t.handoverTo!==memberF)return false;
+    if(statusFilter!=='all'&&t.status!==statusFilter)return false;
+    return true;
+  }).sort((a,b)=>{
+    // 未完了優先、期日昇順
+    if(a.status==='done'&&b.status!=='done')return 1;
+    if(a.status!=='done'&&b.status==='done')return -1;
+    if(a.due&&b.due)return a.due.localeCompare(b.due);
+    if(a.due)return -1;if(b.due)return 1;
+    return 0;
+  });
+
+  const list=document.getElementById('handover-list');
+  if(tasks.length===0){
+    list.innerHTML='<div class="empty">引き継ぎ情報のあるタスクがありません</div>';
+    return;
+  }
+
+  list.innerHTML=tasks.map(t=>{
+    const mbFrom=MEMBERS.find(m=>m.name===t.member)||{dot:'#ccc'};
+    const mbTo=MEMBERS.find(m=>m.name===t.handoverTo)||null;
+    const dueChip=buildDueChip(t.due);
+    return `<div class="handover-card${t.status==='done'?' done-task':''}">
+      <div class="card-header">
+        <div class="task-title">${esc(t.title)}</div>
+        <span class="status-badge ${STATUS_CLS[t.status]||'badge-todo'}">${STATUS_LABEL[t.status]||'未着手'}</span>
+      </div>
+      <div class="handover-body">${esc(t.handover)}</div>
+      <div class="card-meta">
+        <div class="meta-item">
+          <div class="meta-dot" style="background:${mbFrom.dot};"></div>
+          ${t.member}
+        </div>
+        ${mbTo?`<span class="arrow">→</span>
+        <div class="meta-item">
+          <div class="meta-dot" style="background:${mbTo.dot};"></div>
+          ${t.handoverTo}
+        </div>`:''}
+        ${dueChip?`<span class="${dueChip.cls}">${dueChip.label}</span>`:''}
+        <button class="go-task-btn" onclick="window.location.href='タスク.html'">タスクへ</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function buildDueChip(due){
+  if(!due)return null;
+  const today=new Date();today.setHours(0,0,0,0);
+  const d=new Date(due);
+  const diff=Math.round((d-today)/(1000*60*60*24));
+  let cls='due-chip',label=due.replace(/-/g,'/');
+  if(diff<0){cls='due-chip overdue';label+=' 期限切れ';}
+  else if(diff===0){cls='due-chip today';label='今日';}
+  return{cls,label};
+}
+
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+init();
+</script>
+</body>
+</html>
